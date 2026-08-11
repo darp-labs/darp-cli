@@ -32,6 +32,14 @@ func (osFileSystem) WriteFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
+func (osFileSystem) ReadFile(path string) ([]byte, error) {
+	return os.ReadFile(path)
+}
+
+func (osFileSystem) Rename(oldPath, newPath string) error {
+	return os.Rename(oldPath, newPath)
+}
+
 func (osFileSystem) Base(path string) string {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {

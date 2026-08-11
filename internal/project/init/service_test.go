@@ -1,9 +1,14 @@
 package init
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/darpbr/darp-cli/internal/project/doctor"
 )
 
 func TestInitializeCreatesExpectedProjectStructure(t *testing.T) {
@@ -13,7 +18,7 @@ func TestInitializeCreatesExpectedProjectStructure(t *testing.T) {
 		t.Fatalf("mkdir project dir: %v", err)
 	}
 
-	service := NewService(NewOSFileSystem(), "# lifecycle\n")
+	service := NewService(NewOSFileSystem(), "# ignored legacy content\n")
 
 	result, err := service.Initialize(projectDir)
 	if err != nil {
@@ -37,11 +42,17 @@ workflows:
 
 skills:
   documentation: .agents/skills/documentation
+  architecture: .agents/skills/architecture
+  testing: .agents/skills/testing
+  release: .agents/skills/release
 `)
-	assertFileContent(t, filepath.Join(projectDir, ".darp", "lifecycle.md"), "# lifecycle\n")
+	assertFileContent(t, filepath.Join(projectDir, ".darp", "lifecycle.md"), assetFiles[".darp/lifecycle.md"])
 
 	for _, directory := range darpDirectories {
 		assertDirectoryExists(t, filepath.Join(projectDir, directory))
+	}
+	for _, skill := range managedSkills {
+		assertFileContent(t, filepath.Join(projectDir, skillsRoot, skill, "SKILL.md"), assetFiles[filepath.Join(skillsRoot, skill, "SKILL.md")])
 	}
 }
 
@@ -58,7 +69,19 @@ func TestInitializeIsIdempotentAndDoesNotOverwriteFiles(t *testing.T) {
 		t.Fatalf("first initialize: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(projectDir, "darp.yml"), []byte("name: custom\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(projectDir, "darp.yml"), []byte(`version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+  custom: .agents/skills/custom
+metadata:
+  owner: team
+`), 0o644); err != nil {
 		t.Fatalf("write custom darp.yml: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(projectDir, ".darp", "lifecycle.md"), []byte("# user changes\n"), 0o644); err != nil {
@@ -71,12 +94,238 @@ func TestInitializeIsIdempotentAndDoesNotOverwriteFiles(t *testing.T) {
 		t.Fatalf("second initialize: %v", err)
 	}
 
-	if !result.AlreadyInitialized {
-		t.Fatalf("expected already initialized result")
+	if result.AlreadyInitialized {
+		t.Fatalf("expected repair result after adding missing skills")
 	}
 
-	assertFileContent(t, filepath.Join(projectDir, "darp.yml"), "name: custom\n")
+	updated, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read updated darp.yml: %v", err)
+	}
+	for _, skill := range managedSkills {
+		if !strings.Contains(string(updated), skill+": .agents/skills/"+skill) {
+			t.Fatalf("expected managed skill %q in updated config: %s", skill, updated)
+		}
+	}
+	if !strings.Contains(string(updated), "custom: .agents/skills/custom") || !strings.Contains(string(updated), "owner: team") {
+		t.Fatalf("expected custom configuration to be preserved: %s", updated)
+	}
 	assertFileContent(t, filepath.Join(projectDir, ".darp", "lifecycle.md"), "# user changes\n")
+}
+
+func TestInitializeRejectsInvalidExistingConfigWithoutCreatingAssets(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	original := []byte("name: custom\n")
+	if err := os.WriteFile(filepath.Join(projectDir, "darp.yml"), original, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	_, err := NewService(NewOSFileSystem()).Initialize(projectDir)
+	if err == nil || !strings.Contains(err.Error(), "invalid darp.yml") {
+		t.Fatalf("expected invalid config error, got %v", err)
+	}
+	assertFileContent(t, filepath.Join(projectDir, "darp.yml"), string(original))
+	if _, statErr := os.Stat(filepath.Join(projectDir, ".darp")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no assets after invalid config, stat error: %v", statErr)
+	}
+}
+
+func TestInitializeUpgradesOnlyExactHistoricalPlaceholders(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("initial initialize: %v", err)
+	}
+	quality := filepath.Join(projectDir, ".darp/governance/quality-gates.md")
+	documentation := filepath.Join(projectDir, ".agents/skills/documentation/SKILL.md")
+	workflow := filepath.Join(projectDir, ".darp/workflows/implement.yaml")
+	for path, content := range map[string]string{
+		quality:       historicalPlaceholders[".darp/governance/quality-gates.md"],
+		documentation: historicalPlaceholders[".agents/skills/documentation/SKILL.md"],
+		workflow:      historicalPlaceholders[".darp/workflows/implement.yaml"],
+	} {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("write placeholder %s: %v", path, err)
+		}
+	}
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("placeholder upgrade: %v", err)
+	}
+	assertFileContent(t, quality, assetFiles[".darp/governance/quality-gates.md"])
+	assertFileContent(t, documentation, assetFiles[".agents/skills/documentation/SKILL.md"])
+	assertFileContent(t, workflow, assetFiles[".darp/workflows/implement.yaml"])
+}
+
+func TestInitializePreservesNearPlaceholdersAndIsIdempotent(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("initial initialize: %v", err)
+	}
+	quality := filepath.Join(projectDir, ".darp/governance/quality-gates.md")
+	original := "# Quality Gates\n\ncustom\n"
+	if err := os.WriteFile(quality, []byte(original), 0o644); err != nil {
+		t.Fatalf("write custom quality gates: %v", err)
+	}
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("repair initialize: %v", err)
+	}
+	assertFileContent(t, quality, original)
+	before := snapshotFiles(t, projectDir)
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("idempotent initialize: %v", err)
+	}
+	after := snapshotFiles(t, projectDir)
+	if !reflect.DeepEqual(before, after) {
+		t.Fatalf("second initialize changed files\nbefore: %#v\nafter: %#v", before, after)
+	}
+}
+
+func TestInitializeRejectsDuplicateSkills(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	original := `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+  documentation: .agents/skills/other
+`
+	if err := os.WriteFile(filepath.Join(projectDir, "darp.yml"), []byte(original), 0o644); err != nil {
+		t.Fatalf("write duplicate config: %v", err)
+	}
+	_, err := NewService(NewOSFileSystem()).Initialize(projectDir)
+	if err == nil || !strings.Contains(err.Error(), "duplicate key") {
+		t.Fatalf("expected duplicate key error, got %v", err)
+	}
+	assertFileContent(t, filepath.Join(projectDir, "darp.yml"), original)
+}
+
+func TestCanonicalAssetsMatchRepositoryContracts(t *testing.T) {
+	for _, asset := range assetPaths {
+		t.Run(asset.target, func(t *testing.T) {
+			rootPath := filepath.Join("..", "..", "..", asset.target)
+			content, err := os.ReadFile(rootPath)
+			if err != nil {
+				t.Fatalf("read repository contract: %v", err)
+			}
+			if string(content) != assetFiles[asset.target] {
+				t.Fatalf("embedded asset is not synchronized with %s", rootPath)
+			}
+		})
+	}
+}
+
+func TestInitializePreservesConfigWhenAtomicReplacementFails(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	original := `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+`
+	configPath := filepath.Join(projectDir, "darp.yml")
+	if err := os.WriteFile(configPath, []byte(original), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	fs := failingRenameFileSystem{FileSystem: NewOSFileSystem()}
+	_, err := NewService(fs).Initialize(projectDir)
+	if err == nil || !strings.Contains(err.Error(), "replace darp.yml") {
+		t.Fatalf("expected replacement error, got %v", err)
+	}
+	assertFileContent(t, configPath, original)
+	if _, statErr := os.Stat(filepath.Join(projectDir, ".darp")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no assets after replacement failure, stat error: %v", statErr)
+	}
+}
+
+func TestInitializeIsAgnosticToProjectStack(t *testing.T) {
+	testCases := map[string][]string{
+		"empty":          nil,
+		"java-spring":    {"pom.xml", "src/main/java/Application.java"},
+		"python-fastapi": {"pyproject.toml", "app/main.py"},
+		"go":             {"go.mod", "cmd/server/main.go"},
+		"monorepo":       {"frontend/package.json", "services/api/go.mod", "tools/script.py"},
+	}
+	for name, files := range testCases {
+		t.Run(name, func(t *testing.T) {
+			projectDir := filepath.Join(t.TempDir(), "demo-project")
+			if err := os.Mkdir(projectDir, 0o755); err != nil {
+				t.Fatalf("mkdir project dir: %v", err)
+			}
+			for _, file := range files {
+				filePath := filepath.Join(projectDir, filepath.FromSlash(file))
+				if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+					t.Fatalf("mkdir fixture path: %v", err)
+				}
+				if err := os.WriteFile(filePath, []byte("fixture\n"), 0o644); err != nil {
+					t.Fatalf("write fixture file: %v", err)
+				}
+			}
+			if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+				t.Fatalf("initialize: %v", err)
+			}
+			if result := doctor.NewService().Diagnose(projectDir); result.ExitCode() != 0 {
+				t.Fatalf("doctor rejected fixture: %#v", result.Checks)
+			}
+		})
+	}
+}
+
+type failingRenameFileSystem struct {
+	FileSystem
+}
+
+func (failingRenameFileSystem) Rename(_, _ string) error {
+	return errors.New("simulated rename failure")
+}
+
+func snapshotFiles(t *testing.T, root string) map[string]string {
+	t.Helper()
+	result := make(map[string]string)
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		result[relative] = string(content)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("snapshot files: %v", err)
+	}
+	return result
 }
 
 func TestInitializeRestoresMissingConfigWithoutChangingExistingDarpFiles(t *testing.T) {

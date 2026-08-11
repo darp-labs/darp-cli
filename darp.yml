@@ -11,3 +11,6 @@ workflows:
 
 skills:
   documentation: .agents/skills/documentation
+  architecture: .agents/skills/architecture
+  testing: .agents/skills/testing
+  release: .agents/skills/release

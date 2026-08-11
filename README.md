@@ -55,9 +55,13 @@ darp --help
 darp --version
 ```
 
-This command initializes the current directory as a DARP project by creating `darp.yml`, the base `.darp/` contract structure, and the shared agent skills structure under `.agents/skills/`.
-If a project is partial, it restores only missing DARP files and directories;
-existing files, including files under `.spec/specs/`, are never overwritten.
+This command initializes the current directory as a DARP project by creating
+`darp.yml`, the lifecycle and quality-gate contracts, the workflow contract,
+and the four shared governance skills under `.agents/skills/`.
+If a project is partial, it restores only missing DARP files and directories.
+An existing valid `darp.yml` receives only missing governance-skill entries;
+custom fields, extra skills and existing files are preserved. Invalid or
+incomplete configuration is reported without creating missing assets.
 
 `darp --help` shows the CLI description and useful commands.
 
