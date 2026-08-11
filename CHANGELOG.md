@@ -22,6 +22,9 @@ as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 - `darp init` restaura apenas arquivos e diretórios ausentes em projetos
   parciais, preservando arquivos existentes e especificações do projeto.
+- `darp init` agora distribui as quatro skills de governança, os contratos
+  completos de lifecycle e quality gates, e atualiza `darp.yml` de forma
+  aditiva e segura.
 - A versão do CLI é calculada a partir do Git durante o build, incluindo
   indicação de desenvolvimento e de worktree modificada quando aplicável.
 

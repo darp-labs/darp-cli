@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — não iniciar antes da aprovação da Spec 004 e do Plan 004.
+Ready for implementation after approval of Spec 004, Plan 004 and ADR 001.
 
 ## Related Plan
 
@@ -19,76 +19,92 @@ Draft — não iniciar antes da aprovação da Spec 004 e do Plan 004.
 
 ### T1 — Consolidar ativos canônicos
 
-- [ ] Definir a fonte canônica embutida para lifecycle, quality gates e as
-      quatro skills.
-- [ ] Garantir que os conteúdos são determinísticos e funcionam sem rede.
-- [ ] Garantir que cada skill contém as seções e limites da Spec 003.
-- [ ] Remover instruções específicas de Go, Java, Spring, Python, FastAPI,
+- [x] Criar `internal/project/init/assets/` como fonte canônica embutida para
+      lifecycle, quality gates, workflow e as quatro skills. Validar com teste
+      de presença e conteúdo mínimo.
+- [x] Garantir que os conteúdos são determinísticos e funcionam sem rede.
+- [x] Garantir que cada skill contém as seções e limites da Spec 003.
+- [x] Remover instruções específicas de Go, Java, Spring, Python, FastAPI,
       providers ou ferramentas obrigatórias.
-- [ ] Garantir que o workflow não passe a executar skills automaticamente.
+- [x] Garantir que o workflow não passe a executar skills automaticamente.
 
 ### T2 — Expandir a estrutura criada pelo init
 
-- [ ] Incluir os diretórios `architecture`, `testing` e `release` na estrutura
+- [x] Incluir os diretórios `architecture`, `testing` e `release` na estrutura
       criada pelo serviço de inicialização.
-- [ ] Criar `SKILL.md` ausente para as quatro skills.
-- [ ] Criar lifecycle e quality gates completos somente quando os arquivos
+- [x] Criar `SKILL.md` ausente para as quatro skills.
+- [x] Criar lifecycle e quality gates completos somente quando os arquivos
       estiverem ausentes.
-- [ ] Manter a criação de workflow e templates compatível com as specs
+- [x] Manter a criação de workflow e templates compatível com as specs
       anteriores.
 
 ### T3 — Atualizar `darp.yml` com segurança
 
-- [ ] Fazer projetos novos registrarem as quatro skills nos caminhos canônicos.
-- [ ] Definir a estratégia de atualização aditiva para `darp.yml` existente.
-- [ ] Preservar valores existentes, skills adicionais e campos desconhecidos.
-- [ ] Não sobrescrever `darp.yml` quando o YAML for inválido ou a atualização
+- [x] Fazer projetos novos registrarem as quatro skills nos caminhos canônicos.
+- [x] Implementar a estratégia aditiva do ADR 001, editando somente `skills`.
+- [x] Preservar valores existentes, skills adicionais e campos desconhecidos.
+- [x] Não sobrescrever `darp.yml` quando o YAML for inválido ou a atualização
       segura não puder ser concluída.
-- [ ] Cobrir entradas duplicadas, valores customizados e configuração parcial.
+- [x] Cobrir entradas duplicadas, valores customizados, configuração parcial e
+      falha na substituição do arquivo.
 
 ### T4 — Preservar ativos e idempotência
 
-- [ ] Garantir que arquivos existentes nunca sejam substituídos integralmente;
+- [x] Garantir que arquivos existentes nunca sejam substituídos integralmente;
       tratar a atualização aditiva de `darp.yml` como exceção controlada.
-- [ ] Garantir que `SKILL.md` customizado seja preservado integralmente.
-- [ ] Garantir que lifecycle e quality gates customizados sejam preservados.
-- [ ] Garantir que a segunda execução não remova arquivos do usuário.
-- [ ] Garantir que uma execução parcial possa ser reparada na execução seguinte.
+- [x] Garantir que `SKILL.md` customizado seja preservado integralmente.
+- [x] Garantir que lifecycle e quality gates customizados sejam preservados.
+- [x] Atualizar somente os placeholders históricos exatos para os ativos
+      canônicos equivalentes.
+- [x] Preservar arquivos que tenham qualquer conteúdo diferente do placeholder,
+      mesmo quando pareçam incompletos.
+- [x] Garantir que a segunda execução não remova arquivos do usuário.
+- [x] Garantir que uma execução parcial possa ser reparada na execução seguinte.
 
 ### T5 — Criar testes agnósticos de projeto
 
-- [ ] Testar projeto novo sem código.
-- [ ] Testar fixture Java com Spring.
-- [ ] Testar fixture Python com FastAPI.
-- [ ] Testar fixture Go.
-- [ ] Testar monorepo com múltiplas linguagens.
-- [ ] Testar projeto parcialmente inicializado.
-- [ ] Testar YAML inválido, campos desconhecidos e skills adicionais.
-- [ ] Testar falhas de filesystem sem remoção de arquivos existentes.
-- [ ] Testar idempotência e conteúdo mínimo de todos os contratos.
+- [x] Testar projeto novo sem código.
+- [x] Testar fixture Java com Spring.
+- [x] Testar fixture Python com FastAPI.
+- [x] Testar fixture Go.
+- [x] Testar monorepo com múltiplas linguagens.
+- [x] Testar projeto parcialmente inicializado.
+- [x] Testar YAML inválido, campos desconhecidos e skills adicionais.
+- [x] Testar YAML semanticamente incompleto e chaves duplicadas em `skills`.
+- [x] Testar upgrade dos placeholders históricos de quality gates, documentation
+      e workflow.
+- [x] Testar preservação de cada placeholder com uma alteração mínima de
+      conteúdo.
+- [x] Testar falhas de filesystem sem remoção de arquivos existentes.
+- [x] Testar idempotência e conteúdo mínimo de todos os contratos.
 
 ### T6 — Validar integração e documentação
 
-- [ ] Executar `go test ./...`.
-- [ ] Executar `darp doctor` em cada fixture válida.
-- [ ] Confirmar que nenhum teste depende de detecção de stack para obter
+- [x] Executar `go test ./...`.
+- [x] Executar `darp doctor` em cada fixture válida.
+- [x] Confirmar que nenhum teste depende de detecção de stack para obter
       sucesso.
-- [ ] Confirmar que nenhum comando do projeto-alvo é executado pelo `init`.
-- [ ] Atualizar README e documentação da inicialização com a nova estrutura.
-- [ ] Confirmar que `.agents/skills/security-review/` não foi alterada.
-- [ ] Executar `git diff --check`.
-- [ ] Revisar o diff final contra Spec 004, Plan 004 e todas as tasks.
+- [x] Confirmar que nenhum comando do projeto-alvo é executado pelo `init`.
+- [x] Atualizar README e documentação da inicialização com a nova estrutura.
+- [x] Sincronizar os contratos versionados da raiz com os ativos canônicos e
+      registrar a mudança de bootstrap em `CHANGELOG.md`.
+- [x] Atualizar o `darp.yml` deste repositório para registrar as quatro skills
+      de governança, mantendo `security-review` independente.
+- [x] Confirmar que `.agents/skills/security-review/` não foi alterada.
+- [x] Executar `git diff --check`.
+- [x] Revisar o diff final contra Spec 004, Plan 004 e todas as tasks.
 
 ## Validation Checklist
 
-- [ ] Spec 004 aprovada.
-- [ ] Plan 004 aprovado.
-- [ ] Todas as tasks T1–T6 concluídas.
-- [ ] Projetos novos recebem as quatro skills.
-- [ ] Projetos existentes são reparados sem sobrescrita destrutiva.
-- [ ] Fixtures de múltiplas stacks passam no `darp doctor`.
-- [ ] Testes existentes passam.
-- [ ] Nenhum bloqueio pendente.
+- [x] Spec 004 aprovada.
+- [x] Plan 004 aprovado.
+- [x] Todas as tasks T1–T6 concluídas.
+- [x] Projetos novos recebem as quatro skills.
+- [x] Projetos existentes são reparados sem sobrescrita destrutiva.
+- [x] Configuração inválida existente é reportada e permanece intacta.
+- [x] Fixtures de múltiplas stacks passam no `darp doctor`.
+- [x] Testes existentes passam.
+- [x] Nenhum bloqueio pendente.
 
 ## Notas e bloqueios
 

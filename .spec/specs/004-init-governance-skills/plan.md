@@ -2,12 +2,13 @@
 
 ## Status
 
-Draft — depende da aprovação da Spec 004.
+Ready for implementation after approval of Spec 004 and ADR 001.
 
 ## Related Specifications
 
 - [`spec.md`](spec.md)
 - [`../003-governance/spec.md`](../003-governance/spec.md)
+- [`adr/001-bootstrap-assets-and-config-update.md`](adr/001-bootstrap-assets-and-config-update.md)
 
 ## Estratégia
 
@@ -17,25 +18,25 @@ abstração de filesystem existente, criando somente arquivos ausentes e
 aplicando uma atualização aditiva e segura ao `darp.yml` quando necessário.
 
 A seleção de conteúdo não deve depender de inspeção do projeto-alvo. A fonte
-canônica pode ser `go:embed` ou constantes versionadas, desde que seja local,
-determinística e testável.
+canônica é `internal/project/init/assets/`, incorporada com `go:embed`; os
+contratos equivalentes na raiz são sincronizados e verificados por teste.
 
 ## Dependências e ordem
 
-1. Aprovar Spec 003 e Spec 004.
-2. Consolidar os conteúdos canônicos de lifecycle, quality gates e quatro
-   skills.
-3. Definir e implementar a atualização segura do `darp.yml`.
+1. Confirmar Spec 003 aprovada e aprovar Spec 004, Plan 004 e ADR 001.
+2. Consolidar os conteúdos canônicos no diretório de ativos embarcados.
+3. Estender a abstração de filesystem e implementar a atualização segura do
+   `darp.yml` conforme o ADR 001.
 4. Estender o serviço de bootstrap e preservar idempotência.
 5. Adicionar testes unitários, de reparo, preservação e fixtures agnósticas.
-6. Atualizar documentação e validar com `darp doctor`.
+6. Atualizar documentação e changelog, e validar com `darp doctor`.
 
 ## Áreas afetadas
 
 - `internal/project/init/`
 - testes de `internal/project/init/`
-- fonte dos ativos embutidos usados pelo `init`
-- `README.md`
+- `internal/project/init/assets/`
+- `README.md` e `CHANGELOG.md`
 - documentação da Spec 001, se o contrato de preservação for alterado
 
 Não devem ser alterados pelo escopo normal:
@@ -60,12 +61,14 @@ o reparo seguro de configurações existentes.
 
 ### M3 — Scaffold e preservação
 
-Criar diretórios e arquivos ausentes, sem sobrescrever ativos customizados.
+Criar diretórios e arquivos ausentes, atualizar somente placeholders históricos
+exatos e preservar ativos customizados.
 
 ### M4 — Testes
 
-Cobrir projeto novo, projeto parcial, reexecução, ativos customizados, YAML
-inválido, campos desconhecidos, skills adicionais e falhas de filesystem.
+Cobrir projeto novo, projeto parcial, reexecução, placeholders históricos,
+ativos customizados, YAML inválido, campos desconhecidos, skills adicionais e
+falhas de filesystem.
 
 ### M5 — Compatibilidade e documentação
 
@@ -81,20 +84,25 @@ executa comandos ou detecta o tipo do projeto.
 - execução de `darp doctor` em cada fixture scaffoldada;
 - segunda execução do `init` sem diferenças nos arquivos existentes;
 - inspeção do diff para garantir que `security-review` não foi alterada;
-- `git diff --check`.
+- `git diff --check`;
+- verificação de sincronização entre ativos embarcados e contratos versionados
+  na raiz.
 
 ## Recuperação
 
-O serviço deve falhar sem apagar arquivos. Em caso de erro na atualização do
-`darp.yml`, manter o arquivo original e reportar a causa. Em caso de erro após
-criar alguns ativos, os ativos já criados não devem ser removidos
-automaticamente; a próxima execução deve conseguir reparar os ausentes.
+O serviço deve falhar sem apagar arquivos. Em caso de erro na validação ou
+atualização do `darp.yml`, manter o arquivo original, não criar ativos nessa
+execução e reportar a causa. Depois que a configuração for validada e salva,
+um erro ao criar ativos não deve remover os ativos já criados; a próxima
+execução deve conseguir reparar os ausentes.
 
 ## Premissas
 
 - As quatro skills da Spec 003 são os templates padrão oficiais.
 - O `darp doctor` continua validando skills encontradas no diretório, além das
   entradas registradas na configuração.
+- Um `darp.yml` existente inválido ou não editável impede a criação de ativos
+  nessa execução e permanece intacto.
 - O workflow `implement.yaml` permanece sem execução automática.
 - A neutralidade é obtida por descoberta contextual dentro das skills, não por
   lógica de detecção de stack no `darp init`.
