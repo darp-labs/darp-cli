@@ -1,16 +1,19 @@
 version: "1.0"
-
 project:
   name: "darp-cli"
-
 governance:
   lifecycle: .darp/lifecycle.md
-
 workflows:
   default: implement
-
 skills:
   documentation: .agents/skills/documentation
   architecture: .agents/skills/architecture
   testing: .agents/skills/testing
   release: .agents/skills/release
+assets:
+  - path: .github/copilot-instructions.md
+    family: github
+    type: instruction
+  - path: .github/prompts/bootstrap-repository.prompt.md
+    family: github
+    type: prompt

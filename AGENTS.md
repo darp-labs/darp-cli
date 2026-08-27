@@ -47,9 +47,7 @@ Implementation order is always:
 
 Never skip steps.
 
-The detailed operational definitions are in `.darp/lifecycle.md`. The shorter
-workflow in `.spec/constitution.md` is not replaced; this lifecycle expands it
-for execution and review.
+The detailed operational definitions are in `.darp/lifecycle.md`. The shorter workflow in `.spec/constitution.md` is not replaced; this lifecycle expands it for execution and review.
 
 ## Specification Layout
 
@@ -64,10 +62,8 @@ Create one directory per feature using the format `<number>-<short-name>`:
 └── adr/                         # optional, when architecture decisions exist
 ```
 
-Use the templates in `.spec/templates/`. Do not create active specifications,
-plans, or tasks outside `.spec/specs/<number>-<short-name>/`.
-The `.darp/` directory is reserved for DARP runtime contracts, while
-`.agents/skills/` is reserved for skills discovered by coding agents.
+Use the templates in `.spec/templates/`. Do not create active specifications, plans, or tasks outside `.spec/specs/<number>-<short-name>/`.
+The `.darp/` directory is reserved for DARP runtime contracts, while `.agents/skills/` is reserved for skills discovered by coding agents.
 
 ## Architecture Principles
 
@@ -112,8 +108,7 @@ Do not:
 Always:
 
 - update documentation;
-- update `CHANGELOG.md` under `Unreleased` for user-visible changes, fixes,
-  breaking changes or deprecations;
+- update `CHANGELOG.md` under `Unreleased` for user-visible changes, fixes, breaking changes or deprecations;
 - explain assumptions;
 - write implementation tasks as unchecked Markdown checkboxes (`- [ ]`);
 - mark a task as complete only after its validation passes;
@@ -133,3 +128,19 @@ When implementing:
 - prefer incremental changes;
 - keep commits focused;
 - avoid unrelated refactoring.
+
+## Development commands
+
+- `make build` — build the CLI binary
+- `make test` — run Go tests
+- `make lint` — run golangci-lint (falls back to go vet)
+- `make verify` — fmt + test + lint
+- `make run` — run the CLI locally
+
+## Repo layout
+
+- `cmd/` — CLI entrypoints
+- `internal/cli/`, `internal/project/` — domain packages
+- `pkg/` — public reusable packages
+- `.spec/specs/<n>-<name>/` — active feature specs (spec.md, plan.md, tasks.md)
+- `.agents/skills/` — agent skills, loaded on demand

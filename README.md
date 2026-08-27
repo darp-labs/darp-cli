@@ -63,15 +63,30 @@ An existing valid `darp.yml` receives only missing governance-skill entries;
 custom fields, extra skills and existing files are preserved. Invalid or
 incomplete configuration is reported without creating missing assets.
 
+`darp init` also discovers pre-existing AI assets from supported tool families
+(`.github/`, `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, plus root
+`AGENTS.md`, `CLAUDE.md` and `GEMINI.md`) and registers them additively in an
+`assets` section of `darp.yml`. Discovery is local, deterministic and
+read-only: it never executes, copies, moves or overwrites found files, and it
+does not follow symlinks. Each registered entry records `path`, `family` and
+`type`. Entries already registered are reported as `already registered`;
+physical paths recognized by more than one family or type are reported as
+ambiguous and are not persisted automatically. Candidates with the same
+semantic category and normalized name are reported as conflicting and are also
+not persisted automatically.
+
 `darp --help` shows the CLI description and useful commands.
 
 `darp --version` shows the CLI version embedded at build time.
 
 `darp doctor` performs a read-only diagnosis of the DARP project in the current
 directory. It validates configuration, structure, workflows, skills, templates,
-governance, and contract-version compatibility. It exits with code `1` when a
-critical check fails; warnings still exit with code `0`. Each check is rendered
-with its explicit `PASS`, `WARNING`, or `FAIL` state.
+governance, contract-version compatibility, and registered assets. A registered
+asset whose file is missing is reported as a `WARNING` (not a blocking failure);
+an invalid asset path, family, type, or registered symlink is reported as a
+`FAIL`. The command exits
+with code `1` when a critical check fails; warnings still exit with code `0`.
+Each check is rendered with its explicit `PASS`, `WARNING`, or `FAIL` state.
 
 ## Local Development
 

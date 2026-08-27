@@ -40,6 +40,10 @@ func (osFileSystem) Rename(oldPath, newPath string) error {
 	return os.Rename(oldPath, newPath)
 }
 
+func (osFileSystem) Remove(path string) error {
+	return os.Remove(path)
+}
+
 func (osFileSystem) Base(path string) string {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {

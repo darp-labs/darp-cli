@@ -1,0 +1,5 @@
+# .codex/config.toml
+project_root_markers = [".git", "go.mod"]
+# opcional: se o AGENTS.md crescer além de 32 KiB
+# project_doc_max_bytes = 65536
+model_verbosity = "low"

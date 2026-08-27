@@ -12,7 +12,7 @@ func TestDiagnoseHealthyProject(t *testing.T) {
 	result := NewService().Diagnose(root)
 
 	passed, warnings, errors := result.Counts()
-	if passed != 7 || warnings != 0 || errors != 0 || result.ExitCode() != 0 {
+	if passed != 8 || warnings != 0 || errors != 0 || result.ExitCode() != 0 {
 		t.Fatalf("unexpected healthy result: %#v", result)
 	}
 }
@@ -20,7 +20,7 @@ func TestDiagnoseHealthyProject(t *testing.T) {
 func TestDiagnoseOlderContractWarns(t *testing.T) {
 	result := NewService().Diagnose(healthyProject(t, "0.9"))
 	passed, warnings, errors := result.Counts()
-	if passed != 6 || warnings != 1 || errors != 0 || result.ExitCode() != 0 {
+	if passed != 7 || warnings != 1 || errors != 0 || result.ExitCode() != 0 {
 		t.Fatalf("unexpected warning result: %#v", result)
 	}
 }
@@ -46,7 +46,7 @@ func TestDiagnoseInvalidProjectReportsFailuresAndDoesNotWrite(t *testing.T) {
 		t.Fatalf("doctor modified the project\nbefore: %q\nafter: %q", before, after)
 	}
 	passed, warnings, errors := result.Counts()
-	if passed != 5 || warnings != 0 || errors != 2 || result.ExitCode() != 1 {
+	if passed != 6 || warnings != 0 || errors != 2 || result.ExitCode() != 1 {
 		t.Fatalf("unexpected failing result: %#v", result)
 	}
 }
@@ -173,6 +173,205 @@ func TestDiagnoseRejectsSkillRootFile(t *testing.T) {
 	result := NewService().Diagnose(root)
 	if result.Checks[3].State != Fail {
 		t.Fatalf("expected skill root failure, got %#v", result.Checks[3])
+	}
+}
+
+func TestDiagnoseValidAssetPasses(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: .github/copilot-instructions.md
+    family: github
+    type: instruction
+`)
+	if err := os.MkdirAll(filepath.Join(root, ".github"), 0o755); err != nil {
+		t.Fatalf("mkdir .github: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".github", "copilot-instructions.md"), []byte("# x\n"), 0o644); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Pass {
+		t.Fatalf("expected assets pass, got %#v", check)
+	}
+}
+
+func TestDiagnoseMissingAssetWarns(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: .github/copilot-instructions.md
+    family: github
+    type: instruction
+`)
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Warning || !strings.Contains(check.Message, "missing") {
+		t.Fatalf("expected missing asset warning, got %#v", check)
+	}
+	if result.ExitCode() != 0 {
+		t.Fatalf("missing asset must not block the project, got %#v", result.Checks)
+	}
+}
+
+func TestDiagnoseDirectoryAssetFails(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: .github/copilot-instructions.md
+    family: github
+    type: instruction
+`)
+	if err := os.MkdirAll(filepath.Join(root, ".github", "copilot-instructions.md"), 0o755); err != nil {
+		t.Fatalf("mkdir asset path: %v", err)
+	}
+
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Fail || !strings.Contains(check.Message, "regular file") {
+		t.Fatalf("expected directory asset failure, got %#v", check)
+	}
+	if result.ExitCode() != 1 {
+		t.Fatalf("directory asset must block the project, got %#v", result.Checks)
+	}
+}
+
+func TestDiagnoseUnknownAssetTypeFails(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: .github/copilot-instructions.md
+    family: github
+    type: bogus
+`)
+	if err := os.MkdirAll(filepath.Join(root, ".github"), 0o755); err != nil {
+		t.Fatalf("mkdir .github: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".github", "copilot-instructions.md"), []byte("# x\n"), 0o644); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Fail || !strings.Contains(check.Message, "unknown type") {
+		t.Fatalf("expected unknown type failure, got %#v", check)
+	}
+}
+
+func TestDiagnoseIncompatibleAssetClassificationFails(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: .github/copilot-instructions.md
+    family: claude
+    type: command
+`)
+	if err := os.MkdirAll(filepath.Join(root, ".github"), 0o755); err != nil {
+		t.Fatalf("mkdir .github: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".github", "copilot-instructions.md"), []byte("# x\n"), 0o644); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Fail || !strings.Contains(check.Message, "incompatible") {
+		t.Fatalf("expected incompatible asset failure, got %#v", check)
+	}
+}
+
+func TestDiagnoseRegisteredSymlinkFails(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: .github/copilot-instructions.md
+    family: github
+    type: instruction
+`)
+	if err := os.MkdirAll(filepath.Join(root, ".github"), 0o755); err != nil {
+		t.Fatalf("mkdir .github: %v", err)
+	}
+	target := filepath.Join(root, "instructions.md")
+	if err := os.WriteFile(target, []byte("# x\n"), 0o644); err != nil {
+		t.Fatalf("write target: %v", err)
+	}
+	if err := os.Symlink(target, filepath.Join(root, ".github", "copilot-instructions.md")); err != nil {
+		t.Fatalf("symlink asset: %v", err)
+	}
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Fail || !strings.Contains(check.Message, "symlink") {
+		t.Fatalf("expected symlink failure, got %#v", check)
+	}
+}
+
+func TestDiagnoseAssetTraversalFails(t *testing.T) {
+	root := healthyProject(t, "1.0")
+	rewriteConfig(t, root, `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets:
+  - path: ../outside.md
+    family: github
+    type: instruction
+`)
+	result := NewService().Diagnose(root)
+	if check := result.Checks[7]; check.State != Fail || !strings.Contains(check.Message, "remain inside the project") {
+		t.Fatalf("expected traversal failure, got %#v", check)
+	}
+}
+
+func rewriteConfig(t *testing.T, root, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(root, "darp.yml"), []byte(content), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
 	}
 }
 
