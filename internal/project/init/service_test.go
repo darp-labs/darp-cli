@@ -255,8 +255,88 @@ skills:
 		t.Fatalf("expected replacement error, got %v", err)
 	}
 	assertFileContent(t, configPath, original)
+	if _, statErr := os.Stat(filepath.Join(projectDir, ".darp-init-darp.yml.tmp")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected temporary file cleanup, stat error: %v", statErr)
+	}
 	if _, statErr := os.Stat(filepath.Join(projectDir, ".darp")); !os.IsNotExist(statErr) {
 		t.Fatalf("expected no assets after replacement failure, stat error: %v", statErr)
+	}
+}
+
+func TestInitializeCleansTemporaryAfterWriteFailure(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	original := []byte(`version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+`)
+	configPath := filepath.Join(projectDir, "darp.yml")
+	if err := os.WriteFile(configPath, original, 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	_, err := NewService(failingWriteFileSystem{FileSystem: NewOSFileSystem()}).Initialize(projectDir)
+	if err == nil || !strings.Contains(err.Error(), "write temporary darp.yml") {
+		t.Fatalf("expected temporary write error, got %v", err)
+	}
+	assertFileContent(t, configPath, string(original))
+	if _, statErr := os.Stat(filepath.Join(projectDir, ".darp-init-darp.yml.tmp")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected temporary file cleanup, stat error: %v", statErr)
+	}
+}
+
+func TestInitializeRollsBackAfterLateContractFailure(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	before := snapshotFiles(t, projectDir)
+
+	fs := failingContractWriteFileSystem{FileSystem: NewOSFileSystem()}
+	if _, err := NewService(fs).Initialize(projectDir); err == nil {
+		t.Fatal("expected contract write failure")
+	}
+	after := snapshotFiles(t, projectDir)
+	if !reflect.DeepEqual(before, after) {
+		t.Fatalf("expected rollback to preserve project\nbefore: %q\nafter: %q", before, after)
+	}
+}
+
+func TestInitializeRejectsInvalidAssetsBeforeCreatingStructure(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	config := `version: "1.0"
+project:
+  name: demo
+governance:
+  lifecycle: .darp/lifecycle.md
+workflows:
+  default: implement
+skills:
+  documentation: .agents/skills/documentation
+assets: invalid
+`
+	configPath := filepath.Join(projectDir, "darp.yml")
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err == nil || !strings.Contains(err.Error(), "assets must be a sequence") {
+		t.Fatalf("expected invalid assets error, got %v", err)
+	}
+	assertFileContent(t, configPath, config)
+	if _, statErr := os.Stat(filepath.Join(projectDir, ".darp")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no structure after preflight failure, stat error: %v", statErr)
 	}
 }
 
@@ -299,6 +379,28 @@ type failingRenameFileSystem struct {
 
 func (failingRenameFileSystem) Rename(_, _ string) error {
 	return errors.New("simulated rename failure")
+}
+
+type failingWriteFileSystem struct {
+	FileSystem
+}
+
+func (failingWriteFileSystem) WriteFile(path string, data []byte) error {
+	if filepath.Base(path) == ".darp-init-darp.yml.tmp" {
+		return errors.New("simulated temporary write failure")
+	}
+	return NewOSFileSystem().WriteFile(path, data)
+}
+
+type failingContractWriteFileSystem struct {
+	FileSystem
+}
+
+func (failingContractWriteFileSystem) WriteFile(path string, data []byte) error {
+	if filepath.Base(path) == "quality-gates.md" {
+		return errors.New("simulated contract write failure")
+	}
+	return NewOSFileSystem().WriteFile(path, data)
 }
 
 func snapshotFiles(t *testing.T, root string) map[string]string {
@@ -361,6 +463,143 @@ func TestInitializeRestoresMissingConfigWithoutChangingExistingDarpFiles(t *test
 	if _, err := os.Stat(filepath.Join(projectDir, "darp.yml")); err != nil {
 		t.Fatalf("expected restored darp.yml: %v", err)
 	}
+}
+
+func TestInitializeRegistersDiscoveredAssets(t *testing.T) {
+	root := t.TempDir()
+	projectDir := filepath.Join(root, "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(projectDir, ".github"), 0o755); err != nil {
+		t.Fatalf("mkdir .github: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(projectDir, ".github", "copilot-instructions.md"), []byte("# instructions\n"), 0o644); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+
+	result, err := NewService(NewOSFileSystem()).Initialize(projectDir)
+	if err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	text := string(content)
+	for _, want := range []string{
+		"assets:",
+		"- path: .github/copilot-instructions.md",
+		"family: github",
+		"type: instruction",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected %q in darp.yml:\n%s", want, text)
+		}
+	}
+	if !containsMessage(result, "Registered asset .github/copilot-instructions.md (github/instruction)") {
+		t.Fatalf("expected registered asset message, got %#v", result.Messages)
+	}
+}
+
+func TestInitializeDoesNotDuplicateAssetsOnRerun(t *testing.T) {
+	root := t.TempDir()
+	projectDir := filepath.Join(root, "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(projectDir, ".github"), 0o755); err != nil {
+		t.Fatalf("mkdir .github: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(projectDir, ".github", "copilot-instructions.md"), []byte("# instructions\n"), 0o644); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("first initialize: %v", err)
+	}
+	result, err := NewService(NewOSFileSystem()).Initialize(projectDir)
+	if err != nil {
+		t.Fatalf("second initialize: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	if got := strings.Count(string(content), "path: .github/copilot-instructions.md"); got != 1 {
+		t.Fatalf("expected a single asset entry, got %d:\n%s", got, content)
+	}
+	if !containsMessage(result, "Asset already registered .github/copilot-instructions.md (github/instruction)") {
+		t.Fatalf("expected already registered message, got %#v", result.Messages)
+	}
+}
+
+func TestInitializeReportsAmbiguousAssetsWithoutPersisting(t *testing.T) {
+	root := t.TempDir()
+	projectDir := filepath.Join(root, "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(projectDir, "AGENTS.md"), []byte("# agents\n"), 0o644); err != nil {
+		t.Fatalf("write AGENTS.md: %v", err)
+	}
+
+	result, err := NewService(NewOSFileSystem()).Initialize(projectDir)
+	if err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	if strings.Contains(string(content), "assets:") {
+		t.Fatalf("ambiguous asset must not be persisted:\n%s", content)
+	}
+	if !containsMessage(result, "Skipped ambiguous asset AGENTS.md") {
+		t.Fatalf("expected ambiguous message, got %#v", result.Messages)
+	}
+}
+
+func TestInitializeReportsSemanticConflictsWithoutPersisting(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	writeFixture := func(relative string) {
+		path := filepath.Join(projectDir, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir fixture: %v", err)
+		}
+		if err := os.WriteFile(path, []byte("# review\n"), 0o644); err != nil {
+			t.Fatalf("write fixture: %v", err)
+		}
+	}
+	writeFixture(".github/instructions/review.instructions.md")
+	writeFixture(".github/instructions/nested/review.instructions.md")
+
+	result, err := NewService(NewOSFileSystem()).Initialize(projectDir)
+	if err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+	content, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	if strings.Contains(string(content), "assets:") || !containsMessage(result, "Skipped conflicting asset name review") {
+		t.Fatalf("expected semantic conflict without persistence, config=%s messages=%#v", content, result.Messages)
+	}
+}
+
+func containsMessage(result Result, want string) bool {
+	for _, message := range result.Messages {
+		if strings.Contains(message, want) {
+			return true
+		}
+	}
+	return false
 }
 
 func assertFileContent(t *testing.T, path string, want string) {

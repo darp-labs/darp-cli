@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/darpbr/darp-cli/internal/project/asset"
+	"github.com/darpbr/darp-cli/internal/project/discovery"
 )
 
 const supportedMajor = 1
@@ -78,6 +81,7 @@ func (Service) Diagnose(root string) Result {
 		templatesCheck(root),
 		governanceCheck(root),
 		versionCompatibilityCheck(root),
+		assetsCheck(root),
 	}}
 }
 
@@ -87,6 +91,13 @@ type projectConfig struct {
 	Governance governanceSection `yaml:"governance"`
 	Workflows  workflowsSection  `yaml:"workflows"`
 	Skills     map[string]string `yaml:"skills"`
+	Assets     []assetEntry      `yaml:"assets"`
+}
+
+type assetEntry struct {
+	Path   string `yaml:"path"`
+	Family string `yaml:"family"`
+	Type   string `yaml:"type"`
 }
 
 type projectSection struct {
@@ -312,6 +323,57 @@ func versionCompatibilityCheck(root string) CheckResult {
 	}
 }
 
+func assetsCheck(root string) CheckResult {
+	config, err := readConfig(root)
+	if err != nil {
+		return failed("Assets", err)
+	}
+	var missing []string
+	for _, entry := range config.Assets {
+		if strings.TrimSpace(entry.Path) == "" {
+			return failMessage("Assets", "asset path cannot be empty")
+		}
+		if err := validateRelativePath(entry.Path); err != nil {
+			return failMessage("Assets", fmt.Sprintf("asset %q: %v", entry.Path, err))
+		}
+		if !asset.ValidFamily(entry.Family) {
+			return failMessage("Assets", fmt.Sprintf("asset %q has unknown family %q", entry.Path, entry.Family))
+		}
+		if !asset.ValidType(entry.Type) {
+			return failMessage("Assets", fmt.Sprintf("asset %q has unknown type %q", entry.Path, entry.Type))
+		}
+		classified := discovery.Classify(entry.Path)
+		matched := false
+		for _, candidate := range classified {
+			if candidate.Family == asset.Family(entry.Family) && candidate.Type == asset.Type(entry.Type) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return failMessage("Assets", fmt.Sprintf("asset %q has incompatible family/type %s/%s", entry.Path, entry.Family, entry.Type))
+		}
+		info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(entry.Path)))
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return failed("Assets", fmt.Errorf("asset %q: %w", entry.Path, err))
+			}
+			missing = append(missing, fmt.Sprintf("asset %q is missing", entry.Path))
+			continue
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return failMessage("Assets", fmt.Sprintf("asset %q must not be a symlink", entry.Path))
+		}
+		if info.IsDir() {
+			return failMessage("Assets", fmt.Sprintf("asset %q must be a regular file", entry.Path))
+		}
+	}
+	if len(missing) > 0 {
+		return CheckResult{Name: "Assets", State: Warning, Message: strings.Join(missing, "; ")}
+	}
+	return pass("Assets")
+}
+
 func readConfig(root string) (projectConfig, error) {
 	content, err := os.ReadFile(filepath.Join(root, "darp.yml"))
 	if err != nil {
@@ -322,6 +384,18 @@ func readConfig(root string) (projectConfig, error) {
 		return projectConfig{}, fmt.Errorf("invalid darp.yml: %w", err)
 	}
 	return config, nil
+}
+
+func validateRelativePath(value string) error {
+	path := strings.TrimSpace(value)
+	if path == "" || filepath.IsAbs(path) {
+		return fmt.Errorf("must be a non-empty relative path")
+	}
+	clean := filepath.Clean(path)
+	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("must remain inside the project")
+	}
+	return nil
 }
 
 func validateProjectPath(root, value string) error {
