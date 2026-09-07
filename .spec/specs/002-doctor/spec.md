@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft
+Approved and implemented — validated on 2026-08-27.
 
 ---
 

@@ -108,6 +108,17 @@ Harness
 
 O Harness **não é o modelo**.
 
+## Limite de responsabilidade do DARP
+
+O DARP é a camada de contrato, composição, empacotamento e validação
+declarativa do Harness. Nesta fase, `.darp/harness.yaml` é lido e validado
+localmente pelo pacote interno `internal/project/harness`; a leitura não
+executa agentes, providers, modelos, MCP servers, comandos ou workflows.
+
+Um runtime de Harness poderá consumir esse contrato no futuro. Execução,
+permissões, segredos, observabilidade e avaliação operacional permanecem fora
+do DARP CLI até que exista uma especificação própria.
+
 ---
 
 ## 4. DARP deve ser multi-modelo

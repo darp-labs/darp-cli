@@ -17,6 +17,27 @@ func TestDiscoverEmptyRepository(t *testing.T) {
 	}
 }
 
+func TestDiscoverIgnoresUnsupportedFilesInKnownDirectories(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".github/workflows/ci.yml")
+	writeFixture(t, root, ".github/CODEOWNERS")
+	writeFixture(t, root, ".github/copilot-instructions.md")
+
+	report := Discover(root)
+
+	want := asset.Asset{
+		Path:   ".github/copilot-instructions.md",
+		Family: asset.FamilyGitHub,
+		Type:   asset.TypeInstruction,
+	}
+	if !reflect.DeepEqual(report.Found, []asset.Asset{want}) {
+		t.Fatalf("unexpected found assets\nwant: %#v\ngot:  %#v", []asset.Asset{want}, report.Found)
+	}
+	if len(report.Ambiguous) != 0 || len(report.SemanticConflicts) != 0 {
+		t.Fatalf("unsupported files must not create discovery conflicts: %#v", report)
+	}
+}
+
 func TestDiscoverSingleRootFileAsset(t *testing.T) {
 	root := t.TempDir()
 	writeFixture(t, root, ".github/copilot-instructions.md")
