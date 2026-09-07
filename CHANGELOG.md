@@ -41,6 +41,8 @@ as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- `darp init` agora ignora arquivos não suportados dentro dos diretórios
+  convencionais de assets, evitando falhas durante a descoberta.
 - A descoberta agora centraliza a classificação oficial dos assets, reporta
   conflitos semânticos por categoria e nome normalizado e impede seu registro
   automático.

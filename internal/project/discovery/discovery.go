@@ -180,7 +180,11 @@ func Discover(root string) Report {
 				return nil
 			}
 			slash := filepath.ToSlash(rel)
-			candidates[slash] = append(candidates[slash], Classify(slash)...)
+			classified := Classify(slash)
+			if len(classified) == 0 {
+				return nil
+			}
+			candidates[slash] = append(candidates[slash], classified...)
 			return nil
 		})
 	}

@@ -1,5 +1,9 @@
 # Tasks 002 - `darp doctor`
 
+## Status
+
+Completed — implementation and validation completed on 2026-08-27.
+
 ## Related Plan
 
 - `plan.md`

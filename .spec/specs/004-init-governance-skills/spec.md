@@ -2,8 +2,7 @@
 
 ## Status
 
-Ready for implementation after approval of this specification, Plan 004 and
-[ADR 001](adr/001-bootstrap-assets-and-config-update.md).
+Approved and implemented — validated on 2026-08-27.
 
 ## Related Specifications
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for implementation after approval of Spec 004, Plan 004 and ADR 001.
+Completed — implementation and validation completed on 2026-08-27.
 
 ## Related Plan
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for implementation after approval of Spec 004 and ADR 001.
+Approved and implemented — validated on 2026-08-27.
 
 ## Related Specifications
 

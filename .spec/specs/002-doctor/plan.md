@@ -1,5 +1,9 @@
 # Plan 002 - `darp doctor`
 
+## Status
+
+Approved and implemented — validated on 2026-08-27.
+
 ## Related Specification
 
 - `spec.md`
