@@ -86,12 +86,29 @@ Completed — implementação e validação concluídas.
 
 ## Evidência de validação
 
-- `GOCACHE=/tmp/darp-cli-go-build-cache go test ./...` — PASS.
-- `GOCACHE=/tmp/darp-cli-go-build-cache go vet ./...` — PASS.
-- `GOCACHE=/tmp/darp-cli-go-build-cache make build` — PASS.
-- `GOCACHE=/tmp/darp-cli-go-build-cache make lint` — PASS (fallback para
-  `go vet`, sem issues).
-- `git diff --check` — PASS.
+- `GOCACHE=/tmp/darp-cli-go-build-cache go test ./...` — PASS após adicionar
+  regressão para caminhos absolutos Windows com letra de unidade.
+- `GOCACHE=/tmp/darp-cli-go-build-cache go vet ./...` — PASS (exit status 0).
+- `GOCACHE=/tmp/darp-cli-go-build-cache make build` — PASS (exit status 0; o
+  binário foi gerado). O Go emitiu uma mensagem não fatal ao tentar gravar o
+  cache de módulos em `/home/darp/go/pkg/mod`, que está somente leitura.
+- `GOCACHE=/tmp/darp-cli-go-build-cache make lint` — PASS (exit status 0,
+  fallback para `go vet`, 0 issues).
+- `git diff --check` — PASS (exit status 0).
+
+### Revisão de implementação
+
+- Caminhos absolutos POSIX, caminhos Windows com letra de unidade e traversal
+  são rejeitados por `Parse`; o diagnóstico é coberto por teste.
+- Arquitetura — PASS: a validação continua local, estrutural, sem execução ou
+  acesso à rede; o ajuste não altera limites de pacote.
+- Documentação — PASS: README e documentação técnica descrevem a validação do
+  manifesto; a alteração não adiciona comando nem requer nota de release pela
+  regra de escopo do Plan 006.
+- Compatibilidade — PASS: mudança apenas torna inválidas referências
+  absolutas Windows que já violavam o contrato; `go test ./...` passou.
+- Release notes — N/A conforme Plan 006, pois nenhuma interface de usuário
+  foi adicionada.
 
 ## Limite aprovado
 

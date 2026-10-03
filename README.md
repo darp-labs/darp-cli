@@ -2,51 +2,212 @@
 
 > **Developer AI Resource Platform**
 
-DARP CLI is a developer-first command-line interface for discovering, installing, managing, versioning and evaluating AI assets.
+DARP is an open platform for composing, governing, distributing, and evaluating reusable capabilities for agentic software engineering.
 
-The project is inspired by package managers such as npm, pip and cargo, but instead of managing software libraries, DARP manages reusable AI assets.
+DARP provides a vendor-neutral control layer for AI engineering environments.
 
-Examples of supported assets include:
+It integrates open standards such as:
 
-- Prompts
-- Instructions
-- Skills
-- Personas
-- MCP Servers
-- Workflows
-- Templates
-- Context Packages
+* Agent Skills
+* Agent Plugins
+* MCP
+
+while providing DARP-level abstractions for:
+
+* Harness
+* Registry
+* Policy
+* Compatibility
+* Evaluation
+
+The goal is to make agentic engineering capabilities as portable, versionable, reproducible, and governable as software dependencies are today.
+
+---
 
 ## Vision
 
-Build an open ecosystem for AI engineering where reusable assets can be versioned, shared and installed as easily as software packages.
+DARP aims to become an open platform for agentic software engineering capabilities.
 
-## Getting Started
+Instead of creating another proprietary ecosystem of prompts, Skills, plugins or tools, DARP is designed to compose and govern capabilities from multiple ecosystems.
 
-Before contributing to this project, read:
+Conceptually:
 
-1. AGENTS.md
-2. docs/PROJECT_CONTEXT.md
-3. .spec/constitution.md
-4. [CONTRIBUTING.md](CONTRIBUTING.md)
-5. [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
-6. [CHANGELOG.md](CHANGELOG.md)
+```text
+Agent Plugin
+    ↓
+Portable capability
 
-These documents define the project's vision, development methodology and architectural principles.
+DARP Harness
+    ↓
+Project-level composition and governance
 
-## Contributing
+Agent Client
+    ↓
+Execution
+```
 
-Contributions should follow the project's Specification-Driven Development
-workflow and remain small, deterministic and reviewable. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) for local setup, validation commands,
-issue and pull request guidance. Pull requests use the template in
-[.github/pull_request_template.md](.github/pull_request_template.md).
+DARP is designed to work with different coding agents and AI providers.
 
-All participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Examples include:
 
-## Current Command
+* OpenAI Codex
+* GitHub Copilot
+* Claude Code
+* Cursor
+* Gemini-based agents
+* future compatible agents
 
-The current implemented commands are:
+DARP does not replace these products.
+
+---
+
+## DARP Ecosystem
+
+```text
+                         DARP
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+          Registry                 CLI / SDK
+              │                       │
+              └───────────┬───────────┘
+                          │
+                       Harness
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+    Plugins             Assets            Policy
+        │                 │                 │
+   Agent Plugins       Skills/etc.       Security
+        │
+   ┌────┴────┐
+   │         │
+ Skills     MCP
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│            Agent Clients                  │
+│                                           │
+│ Codex │ Copilot │ Claude │ Cursor │ etc. │
+└───────────────────────────────────────────┘
+```
+
+---
+
+## Core Concepts
+
+### Asset
+
+A reusable AI-oriented artifact or capability.
+
+Examples include:
+
+* Prompts
+* Instructions
+* Skills
+* Workflows
+* Templates
+* Policies
+* Context packages
+* MCP-related resources
+
+---
+
+### Agent Plugin
+
+DARP understands interoperable Agent Plugins.
+
+DARP may:
+
+* discover;
+* inspect;
+* validate;
+* catalog;
+* install;
+* version;
+* verify;
+* evaluate;
+* compose plugins.
+
+DARP does not modify or redefine the Agent Plugin format.
+
+---
+
+### Agent Skill
+
+DARP consumes and manages interoperable Agent Skills.
+
+DARP does not create a competing Skill format.
+
+---
+
+### MCP
+
+DARP integrates with MCP as the tool and contextual interoperability layer.
+
+DARP may discover, catalog, validate and reference MCP resources.
+
+DARP does not replace MCP.
+
+---
+
+### Harness
+
+The DARP Harness is a declarative project-level composition and governance contract.
+
+The canonical manifest is:
+
+```text
+.darp/harness.yaml
+```
+
+A Harness may reference:
+
+* Agent Plugins
+* Skills
+* MCP
+* Assets
+* Providers
+* Policies
+* Workflows
+* Evaluation Contracts
+* Quality Gates
+* Compatibility requirements
+
+The Harness is a DARP source of truth.
+
+Agent-specific configuration may be generated or projected from the Harness through future adapters.
+
+---
+
+## Important Boundary
+
+The existence of:
+
+```text
+.darp/harness.yaml
+```
+
+does not mean that every coding agent automatically understands it.
+
+Different agents may require different native configuration mechanisms.
+
+DARP therefore follows an adapter/projection architecture:
+
+```text
+DARP Harness
+     │
+     ├── AGENTS.md
+     ├── Copilot configuration
+     ├── Claude configuration
+     └── other agent projections
+```
+
+These projections should not become independent sources of truth.
+
+---
+
+## Current Commands
 
 ```bash
 darp init
@@ -55,169 +216,110 @@ darp --help
 darp --version
 ```
 
-This command initializes the current directory as a DARP project by creating
-`darp.yml`, the lifecycle and quality-gate contracts, the workflow contract,
-and the four shared governance skills under `.agents/skills/`.
-If a project is partial, it restores only missing DARP files and directories.
-An existing valid `darp.yml` receives only missing governance-skill entries;
-custom fields, extra skills and existing files are preserved. Invalid or
-incomplete configuration is reported without creating missing assets.
+The current implementation provides the DARP project baseline, governance contracts, asset discovery and Harness manifest validation.
 
-`darp init` also discovers pre-existing AI assets from supported tool families
-(`.github/`, `.claude/`, `.codex/`, `.cursor/`, `.gemini/`, plus root
-`AGENTS.md`, `CLAUDE.md` and `GEMINI.md`) and registers them additively in an
-`assets` section of `darp.yml`. Discovery is local, deterministic and
-read-only: it never executes, copies, moves or overwrites found files, and it
-does not follow symlinks. Each registered entry records `path`, `family` and
-`type`. Entries already registered are reported as `already registered`;
-physical paths recognized by more than one family or type are reported as
-ambiguous and are not persisted automatically. Candidates with the same
-semantic category and normalized name are reported as conflicting and are also
-not persisted automatically.
+---
 
-`darp --help` shows the CLI description and useful commands.
+## Current Scope
 
-`darp --version` shows the CLI version embedded at build time.
+The project currently focuses on:
 
-`darp doctor` performs a read-only diagnosis of the DARP project in the current
-directory. It validates configuration, structure, workflows, skills, templates,
-governance, contract-version compatibility, and registered assets. A registered
-asset whose file is missing is reported as a `WARNING` (not a blocking failure);
-an invalid asset path, family, type, or registered symlink is reported as a
-`FAIL`. The command exits
-with code `1` when a critical check fails; warnings still exit with code `0`.
-Each check is rendered with its explicit `PASS`, `WARNING`, or `FAIL` state.
+* DARP project initialization;
+* repository diagnosis;
+* governance;
+* AI asset discovery;
+* Harness contracts;
+* deterministic validation;
+* interoperability foundations.
 
-## Local Development
+---
 
-Build the binary for the current platform:
+## Non Goals
 
-```bash
-make build
+DARP is not intended to:
+
+* replace coding agents;
+* replace IDEs;
+* replace LLM providers;
+* replace Agent Skills;
+* replace Agent Plugins;
+* replace MCP;
+* become an LLM runtime;
+* automatically execute discovered capabilities.
+
+Execution requires an explicit future runtime or integration.
+
+---
+
+## Development Methodology
+
+DARP uses Specification-Driven Development.
+
+Every feature follows:
+
+```text
+Vision
+→ Architecture
+→ ADR
+→ Specification
+→ Plan
+→ Tasks
+→ Implementation
+→ Tests
+→ Review
+→ Release
 ```
 
-Install the CLI into `~/.local/bin`:
+No feature should be implemented before its specification is approved.
 
-```bash
-make install
+---
+
+## Project Structure
+
+```text
+docs/
+    PROJECT_CONTEXT.md
+    ROADMAP.md
+    AGENTIC_HARNESS.md
+    ADR/
+
+.spec/
+    constitution.md
+    specs/
+
+.darp/
+    lifecycle.md
+    governance/
+    harness.yaml       # project Harness, when initialized
+
+.agents/
+    skills/
+
+cmd/
+internal/
+pkg/
+test/
 ```
 
-Check the computed version string:
-
-```bash
-make version
-```
-
-Run the configured static analysis:
-
-```bash
-make lint
-```
-
-The repository uses `golangci-lint` v2. If it is unavailable, the command
-falls back to `go vet`. Lint caches are stored in the ignored `.cache/`
-directory of the repository.
-
-The `Makefile` computes the version automatically from Git:
-
-- if `HEAD` is tagged with a SemVer tag like `v0.1.0`, the CLI version becomes `0.1.0`
-- otherwise it falls back to a development version like `0.1.0-dev+115ee40`
-- if the worktree is dirty, the suffix becomes `0.1.0-dev+115ee40.dirty`
-
-## DARP Development Lifecycle (DDL)
-
-Every contribution to DARP follows the DARP Development Lifecycle (DDL), a Specification-Driven methodology designed for collaborative software engineering between humans and AI agents.
-
-```mermaid
-flowchart TD
-
-    V["Vision"]
-    C["Constitution"]
-    PC["Project Context"]
-
-    S["Specification"]
-    ADR["Architecture Decision Record"]
-    P["Implementation Plan"]
-    T["Tasks"]
-
-    I["Implementation"]
-    TST["Tests"]
-    AR["Architecture Review"]
-    DR["Documentation Review"]
-    QG["Quality Gates"]
-    R["Review"]
-    REL["Release"]
-
-    V --> C
-    C --> PC
-    PC --> S
-    S --> ADR
-    ADR --> P
-    P --> T
-    T --> I
-    I --> TST
-    TST --> AR
-    AR --> DR
-    DR --> QG
-    QG --> R
-    R --> REL
-    REL --> DONE
-
-    DONE[Completed]
-
-    classDef bootstrap fill:#ede9fe,stroke:#7c3aed,color:#111827;
-    classDef foundation fill:#dbeafe,stroke:#2563eb,color:#111827;
-    classDef planning fill:#dcfce7,stroke:#16a34a,color:#111827;
-    classDef execution fill:#fef3c7,stroke:#d97706,color:#111827;
-
-    class V,C,PC foundation;
-    class S,ADR,P,T planning;
-    class I,R,REL,DONE execution;
-```
-
-The operational lifecycle is documented in [`.darp/lifecycle.md`](.darp/lifecycle.md).
-It includes Tests, Architecture Review, Documentation Review, Quality Gates,
-Review, Release and Completed. Skills and gates are review guidance for humans
-and AI agents; the Go CLI does not execute them automatically.
-
-### Governance
-
-Planning artifacts live in [`.spec/`](.spec/), governance contracts live in
-[`.darp/`](.darp/), and reusable agent instructions live in
-[`.agents/skills/`](.agents/skills/). The governance contracts are:
-
-- [Lifecycle](.darp/lifecycle.md): phases, inputs, outputs and passage criteria.
-- [Quality gates](.darp/governance/quality-gates.md): Build, Tests,
-  Documentation, Architecture, Compatibility and Release Notes.
-
-The governance skills support reviews and do not run automatically:
-
-- [documentation](.agents/skills/documentation/SKILL.md): checks documentation
-  against implemented behavior and validates links.
-- [architecture](.agents/skills/architecture/SKILL.md): reviews design quality,
-  coupling, cohesion and constitutional alignment.
-- [testing](.agents/skills/testing/SKILL.md): reviews coverage, regressions,
-  failure scenarios and validation evidence.
-- [release](.agents/skills/release/SKILL.md): reviews release notes, breaking
-  changes and compatibility impact.
-
-### Lifecycle Phases
-
-| Phase | Purpose |
-| --------- | ---------- |
-| **Foundation** | Defines the identity and long-term direction of the project. |
-| **Planning** | Describes what will be built and how it will be implemented. |
-| **Execution** | Implements, validates and prepares the feature for release. |
+---
 
 ## Principles
 
-- Specification-Driven Development (SDD)
-- AI-first development workflow
-- Provider agnostic
-- Reproducible
-- Deterministic
-- Extensible
-- Open standards whenever possible
+* Open standards first
+* Provider agnostic
+* Agent agnostic
+* Interoperability over replacement
+* Specification-Driven Development
+* AI-first development
+* Deterministic behavior
+* Reproducibility
+* Declarative composition
+* Explicit activation
+* Least privilege
+* Evaluability
+* Extensibility
+
+---
 
 ## Project Status
 
@@ -225,42 +327,11 @@ The governance skills support reviews and do not run automatically:
 
 Current milestone:
 
-- Repository foundation
-- Development methodology
-- Initial architecture
-- CLI features: `darp init` and `darp doctor`
+* Repository foundation
+* Development methodology
+* Governance
+* Asset discovery
+* Harness Manifest foundation
+* Agent interoperability architecture
 
-## Development Workflow
-
-Every feature follows the same lifecycle:
-
-Vision → Constitution → Project Context → Specification → ADR → Plan → Tasks
-→ Implementation → Tests → Architecture Review → Documentation Review
-→ Quality Gates → Review → Release → Completed
-
-No feature should be implemented before an approved specification exists.
-
-## Repository Layout
-
-The repository now contains the first executable CLI baseline together with the existing specification-driven structure.
-
-- `docs/`: project context, roadmap and lifecycle documentation
-- `.spec/`: constitution and reusable planning templates
-- `.spec/specs/`: feature bundles containing specification, plan and tasks
-- `.darp/`: DARP project contracts, governance, workflows and templates
-- `.agents/skills/`: project skills discovered by compatible coding agents
-- `cmd/`, `internal/`, `pkg/`, `test/`: implementation areas for CLI and supporting packages
-- `assets/`: AI-oriented repository assets for tools such as Copilot and Codex
-- `.github/`: prompts, agent guidance and workflow skeletons
-
-## Supported AI Providers (planned)
-
-- OpenAI
-- Anthropic
-- Google Gemini
-- OpenRouter
-- DeepSeek
-
-## License
-
-Apache 2.0 (planned)
+The DARP ecosystem is being developed incrementally.

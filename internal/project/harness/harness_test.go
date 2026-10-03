@@ -102,6 +102,7 @@ kind: Harness
 metadata: {name: demo, version: 1.0.0}
 assets:
   absolute: /tmp/asset.md
+  windowsAbsolute: C:/assets/asset.md
   traversal: ../outside.md
   incomplete: {}
   nested: [not-a-reference]
@@ -110,6 +111,7 @@ assets:
 	joined := diagnosticText(diagnostics)
 	for _, want := range []string{
 		"assets.absolute: path must be relative to the project",
+		"assets.windowsAbsolute: path must be relative to the project",
 		"assets.traversal: path must remain inside the project",
 		"assets.incomplete: must contain id or path",
 		"assets.nested: must be a path string or reference mapping",
