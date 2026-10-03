@@ -1,590 +1,487 @@
 # DARP Agentic Harness
 
-> Alinhamento estratégico do DARP CLI com a evolução dos agentes de IA para engenharia de software.
+> Arquitetura estratégica do DARP para composição e governança de ambientes de engenharia de software assistida por agentes.
 
-**Status:** Proposta estratégica  
-**Data:** 2026-08-15  
-**Escopo:** arquitetura e direção de produto; não implica implementação imediata.
+**Status:** Architectural Direction
+
+**Updated:** 2026-09-09
 
 ---
 
-## 1. Conclusão estratégica
+# 1. Purpose
 
-O mercado está convergindo para uma nova camada de desenvolvimento:
+The DARP Harness defines how a project composes and governs its agentic engineering environment.
+
+The Harness is not a coding agent.
+
+It is not an LLM.
+
+It is not an Agent Plugin.
+
+It is not an Agent Skill.
+
+It is not MCP.
+
+It is the project-level composition and governance layer that brings these capabilities together.
+
+---
+
+# 2. Strategic Model
+
+The DARP architecture is:
 
 ```text
-Modelos
-   ↓
-Agentes
-   ↓
-Harness
-   ↓
-Tools / MCP / Skills
-   ↓
-CI/CD / Evaluation / Governance
-   ↓
-Produção
+Agent Plugin
+    ↓
+Portable capability
+
+DARP Harness
+    ↓
+Project-level composition and governance
+
+Agent Client
+    ↓
+Execution
 ```
 
-A principal conclusão é:
-
-> **O diferencial está deixando de ser apenas qual LLM é utilizado e passando a ser o sistema que conecta agente, contexto, ferramentas, segurança, feedback e execução.**
-
-O DARP deve aproveitar esse movimento sem se transformar em outro Copilot, Claude Code, Codex ou Cursor.
-
-### Posicionamento proposto
-
-> **DARP é uma camada de assets, governança e harness para engenharia de software agentic, independente do modelo utilizado.**
-
-O modelo deve ser substituível.
+The DARP Harness is therefore a higher-level abstraction than an individual Skill, Plugin or MCP server.
 
 ---
 
-## 2. Alinhamento com a visão atual do DARP
+# 3. Relationship with Open Standards
 
-A visão existente do DARP como plataforma/pacote para assets de IA continua válida.
+DARP follows an open-standards-first strategy.
+
+Whenever an established standard already solves a problem, DARP should consume and integrate that standard rather than create a competing format.
+
+Relevant standards include:
+
+* Agent Skills
+* Agent Plugins
+* MCP
+
+DARP provides orchestration and governance around these standards.
+
+---
+
+# 4. Agent Plugins
+
+Agent Plugins provide a portable packaging mechanism for agent capabilities.
+
+DARP should:
+
+* discover plugins;
+* inspect plugins;
+* validate plugins;
+* catalog plugins;
+* install plugins;
+* version plugins;
+* verify provenance;
+* evaluate plugins;
+* reference plugins from Harnesses.
+
+DARP MUST NOT modify the Agent Plugin format.
+
+DARP MUST NOT create a competing plugin format.
+
+---
+
+# 5. Agent Skills
+
+Agent Skills represent reusable agent capabilities.
+
+DARP should consume the established Skill format.
+
+A Skill may be:
 
 ```text
-DARP
- |
- +-- Prompts
- +-- Instructions
- +-- Skills
- +-- Personas
- +-- MCP Servers
- +-- Workflows
- +-- Templates
- +-- Context Packages
- |
- +-- Harness definitions
- +-- Provider profiles
- +-- Tool policies
- +-- Evaluation contracts
+local
+remote
+part of a plugin
+registered in a repository
 ```
 
-O Harness não substitui os assets. Ele os **compõe** em um ambiente reproduzível de execução.
+The Harness references Skills rather than redefining them.
 
 ---
 
-## 3. O que é um Harness
+# 6. MCP
 
-Um Harness é a composição declarativa dos elementos necessários para um agente executar uma classe de tarefas de engenharia com segurança e critérios objetivos.
+MCP provides an interoperability layer for tools and contextual capabilities.
 
-Um Harness pode definir:
+A Harness may declare MCP dependencies or requirements.
 
-- modelo/provedor preferencial;
-- fallback de modelos;
-- instruções;
-- skills;
-- MCP servers;
-- ferramentas;
-- permissões;
-- contexto do repositório;
-- workflows;
-- comandos de teste;
-- quality gates;
-- avaliação;
-- limites de execução;
-- requisitos de segurança;
-- observabilidade.
-
-Conceitualmente:
-
-```text
-Harness
- |
- +-- Provider / Model
- +-- Instructions
- +-- Skills
- +-- MCP Servers
- +-- Tools
- +-- Permissions
- +-- Context
- +-- Workflow
- +-- Quality Gates
- +-- Evaluation
- +-- Fallback Strategy
-```
-
-O Harness **não é o modelo**.
-
-## Limite de responsabilidade do DARP
-
-O DARP é a camada de contrato, composição, empacotamento e validação
-declarativa do Harness. Nesta fase, `.darp/harness.yaml` é lido e validado
-localmente pelo pacote interno `internal/project/harness`; a leitura não
-executa agentes, providers, modelos, MCP servers, comandos ou workflows.
-
-Um runtime de Harness poderá consumir esse contrato no futuro. Execução,
-permissões, segredos, observabilidade e avaliação operacional permanecem fora
-do DARP CLI até que exista uma especificação própria.
-
----
-
-## 4. DARP deve ser multi-modelo
-
-O mesmo Harness deve poder trabalhar com diferentes providers:
-
-```text
-                    DARP Harness
-                         |
-          +--------------+--------------+
-          |              |              |
-       Claude          Codex         Local LLM
-          |              |              |
-      Anthropic         OpenAI        Ollama/vLLM
-```
-
-Exemplo:
-
-```text
-Tarefa simples
-    → modelo local
-
-Implementação Java
-    → Codex
-
-Arquitetura complexa
-    → Claude
-
-Código sensível
-    → modelo local
-
-Falha do provider primário
-    → fallback
-```
-
-A primeira implementação não deve criar um roteador inteligente de modelos. Primeiro deve existir uma **abstração declarativa de providers**.
-
----
-
-## 5. Modelos locais
-
-Modelos open-weight tornam o suporte a execução local relevante para o DARP.
-
-Possíveis backends:
-
-- Ollama
-- llama.cpp
-- vLLM
-- endpoints compatíveis com OpenAI API
-- outros runtimes locais
-
-### Princípio
-
-O DARP **não deve executar inferência de modelos** na primeira fase.
-
-Ele deve apenas declarar e integrar providers/runtimes.
-
-Isso preserva o princípio de não transformar o DARP em um runtime de LLM.
-
----
-
-## 6. MCP como camada de ferramentas
-
-MCP deve continuar sendo um asset de primeira classe.
+Conceptually:
 
 ```text
 Harness
- |
- +-- MCP GitHub
- +-- MCP Database
- +-- MCP Kubernetes
- +-- MCP Documentation
- +-- MCP Observability
+   │
+   ├── GitHub MCP
+   ├── Documentation MCP
+   ├── Database MCP
+   └── Security MCP
 ```
 
-O manifesto de um MCP futuramente poderá declarar:
+DARP manages the declarative relationship.
 
-- identidade;
-- versão;
-- transporte;
-- endpoint;
-- capabilities;
-- secrets necessários;
-- permissões;
-- requisitos de ambiente;
-- compatibilidade;
-- metadados de segurança.
-
-MCP deve ser tratado como infraestrutura de produção, não apenas integração experimental.
+The actual MCP execution remains the responsibility of the consuming agent or runtime.
 
 ---
 
-## 7. Skills como ecossistema de pacotes
+# 7. Harness Responsibilities
 
-O crescimento do formato `SKILL.md` reforça diretamente a visão original do DARP como package manager.
+The Harness may describe:
 
-Uma Skill deve ser um asset versionado com:
+* capabilities;
+* plugins;
+* Skills;
+* MCP;
+* providers;
+* policies;
+* workflows;
+* compatibility;
+* quality gates;
+* evaluation;
+* governance.
 
-- identidade;
-- versão;
-- descrição;
-- inputs;
-- dependências;
-- providers suportados;
-- agentes suportados;
-- ferramentas necessárias;
-- permissões;
-- scripts;
-- documentação;
-- evidências de avaliação.
+The Harness answers:
 
-Exemplo:
+> **How should this project's agentic environment be composed and governed?**
+
+---
+
+# 8. Harness Source of Truth
+
+The canonical DARP Harness manifest is:
 
 ```text
-java-quarkus-review@1.2.0
- |
- +-- instructions
- +-- skills
- +-- MCP dependencies
- +-- validation workflow
- +-- evaluation contract
+.darp/harness.yaml
+```
+
+The Harness is the DARP-level source of truth.
+
+However, coding agents do not necessarily understand the DARP Harness natively.
+
+For this reason DARP will eventually provide adapters/projections.
+
+Conceptually:
+
+```text
+                         DARP Harness
+                              │
+                       Source of Truth
+                              │
+             ┌────────────────┼────────────────┐
+             │                │                │
+             ▼                ▼                ▼
+         AGENTS.md         Copilot          Claude
+         projection       projection       projection
+             │                │                │
+             ▼                ▼                ▼
+           Agent            Agent            Agent
+```
+
+Agent-specific files should be treated as projections whenever possible.
+
+---
+
+# 9. Detection vs Activation
+
+DARP must distinguish between:
+
+```text
+Detected
+```
+
+and:
+
+```text
+Activated
+```
+
+Finding a plugin, Skill, MCP server or agent configuration does not automatically authorize its use.
+
+For example:
+
+```text
+DARP discovers:
+  .claude/
+  .github/
+  AGENTS.md
+  mcp.json
+```
+
+This means:
+
+```text
+Detected = yes
+```
+
+It does not mean:
+
+```text
+Enabled = yes
+```
+
+Activation must be explicit.
+
+This is required for predictable and secure behavior.
+
+---
+
+# 10. Harness Architecture
+
+```text
+                         DARP
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+          Registry                 CLI / SDK
+              │                       │
+              └───────────┬───────────┘
+                          │
+                       Harness
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+    Plugins             Assets            Policy
+        │                 │                 │
+   Agent Plugins       Skills/etc.       Security
+        │
+   ┌────┴────┐
+   │         │
+ Skills     MCP
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│            Agent Clients                  │
+│                                           │
+│ Codex │ Copilot │ Claude │ Cursor │ etc. │
+└───────────────────────────────────────────┘
 ```
 
 ---
 
-## 8. Segurança e supply chain
+# 11. Agent Clients
 
-À medida que skills, MCP servers e plugins passam a influenciar agentes, eles se tornam uma nova superfície de supply chain.
+DARP remains independent of the agent responsible for execution.
 
-Um asset malicioso pode potencialmente:
+Examples include:
 
-- acessar código;
-- executar comandos;
-- acessar MCP;
-- ler credenciais;
-- modificar arquivos;
-- influenciar decisões do agente.
+* Codex;
+* GitHub Copilot;
+* Claude Code;
+* Cursor;
+* Gemini-based agents;
+* future agents.
 
-Portanto, o DARP deve evoluir para suportar:
+The DARP Harness describes the environment.
 
-- provenance;
-- identidade do publisher;
-- checksums/assinaturas;
-- versionamento;
-- lockfiles;
-- declarações de permissões;
-- níveis de confiança;
-- security scanning;
-- instalação reproduzível;
-- auditoria.
-
-### Princípio
-
-> **Um AI asset deve ser tratado como uma dependência de software com comportamento.**
+The agent executes the work.
 
 ---
 
-## 9. Evaluation como primeira classe
+# 12. Adapters and Projections
 
-Package managers tradicionais respondem:
+Different agents consume different configuration mechanisms.
 
-> O pacote instala?
+DARP therefore needs a future adapter architecture.
 
-DARP deve eventualmente responder:
-
-> O asset/harness produz o resultado de engenharia esperado?
-
-Um Evaluation Contract pode conter:
+Potential outputs include:
 
 ```text
-Evaluation
- |
- +-- Task
- +-- Repository fixture
- +-- Expected behavior
- +-- Tests
- +-- Quality gates
- +-- Security checks
- +-- Cost limit
- +-- Time limit
- +-- Result score
+AGENTS.md
+CLAUDE.md
+Copilot instructions
+agent-specific configuration
+Skill declarations
+MCP configuration
 ```
 
-Isso permite comparar:
+The adapter architecture must preserve the Harness as the source of truth.
+
+Future specifications must define:
+
+* supported adapters;
+* projection rules;
+* conflict detection;
+* synchronization;
+* generated vs user-owned files;
+* update behavior;
+* precedence;
+* compatibility.
+
+---
+
+# 13. Generic Harness
+
+A project without known technology should be able to use a generic Harness.
+
+The generic Harness MUST NOT assume:
+
+* language;
+* framework;
+* database;
+* CI/CD platform;
+* coding agent;
+* LLM provider.
+
+The generic Harness establishes only the structural contract required for future configuration.
+
+---
+
+# 14. Existing Repositories
+
+For existing repositories, DARP may discover:
 
 ```text
-Claude + Harness A
+source code
+documentation
+build systems
+test systems
+CI/CD
+agent instructions
+Skills
+Agent Plugins
+MCP
+tool configuration
+```
+
+Discovery is local and deterministic whenever possible.
+
+Detection does not automatically activate discovered capabilities.
+
+---
+
+# 15. Security
+
+Agentic capabilities must be treated as software supply-chain dependencies.
+
+Potential security dimensions include:
+
+* provenance;
+* publisher identity;
+* checksums;
+* signatures;
+* trusted sources;
+* permissions;
+* network access;
+* filesystem access;
+* secrets;
+* execution capabilities;
+* auditability;
+* security scanning.
+
+A future DARP trust model should define these mechanisms explicitly.
+
+---
+
+# 16. Evaluation
+
+Evaluation is part of the Harness architecture.
+
+The objective is to measure engineering outcomes rather than merely determine whether a package can be installed.
+
+Potential evaluation dimensions:
+
+```text
+Task
+Repository fixture
+Expected behavior
+Tests
+Quality gates
+Security checks
+Cost
+Time
+Result
+```
+
+This may eventually enable comparison between:
+
+```text
 Codex + Harness A
-Gemini + Harness A
-Local Qwen + Harness A
+Claude + Harness A
+Copilot + Harness A
+Local Model + Harness A
 ```
 
-usando a mesma tarefa e os mesmos critérios.
+using equivalent tasks and evaluation criteria.
 
 ---
 
-## 10. Arquitetura proposta
+# 17. Registry
+
+The DARP Registry is a future component.
+
+Its conceptual responsibility is:
 
 ```text
-                         DARP CLI
-                            |
-               +------------+------------+
-               |                         |
-            Registry                  Local Cache
-               |                         |
-               +------------+------------+
-                            |
-                          Assets
-                            |
-                    Harness Resolver
-                            |
-          +-----------------+-----------------+
-          |                 |                 |
-       Provider           Tools             Policy
-          |                 |                 |
-       Claude            MCP/Git           Security
-       Codex             Shell             Permissions
-       Gemini            CI/CD             Limits
-       Local             APIs              Audit
-          |                 |                 |
-          +-----------------+-----------------+
-                            |
-                       Evaluation
-                            |
-                     Engineering Result
+DARP Registry
+    │
+    ├── Assets
+    ├── Agent Plugins
+    ├── Skills
+    ├── MCP
+    ├── Harnesses
+    ├── Policies
+    └── Metadata
 ```
 
----
-
-## 11. Novos conceitos candidatos
-
-### Harness
-Composição declarativa de providers, assets, tools, policies e evaluation.
-
-### Provider Profile
-Configuração de um backend de raciocínio e suas capabilities.
-
-### Tool Policy
-Regras que definem quais ferramentas podem ser utilizadas.
-
-### Evaluation Contract
-Definição reproduzível de como o resultado será validado.
-
-### Agent Workflow
-Fluxo reutilizável para uma classe de tarefas.
-
-### Capability
-Representação normalizada das capacidades de um asset/provider.
-
-### Compatibility
-Declaração dos agentes, providers, runtimes e stacks compatíveis.
+Detailed Registry architecture is intentionally deferred.
 
 ---
 
-## 12. Relação com `darp init` e `darp doctor`
+# 18. Runtime
 
-### `darp init`
+DARP CLI is not initially an agent runtime.
 
-No futuro poderá inicializar:
+It does not execute:
 
-- baseline do Harness;
-- providers;
-- policies;
-- evaluation contracts;
-- MCP/skills declarations.
+* models;
+* agents;
+* plugins;
+* MCP servers;
+* arbitrary workflows.
 
-### `darp doctor`
+A future DARP Runtime may consume Harness definitions.
 
-Poderá validar:
-
-- providers configurados;
-- modelos disponíveis;
-- MCP servers;
-- integridade dos assets;
-- conflitos de permissões;
-- ferramentas ausentes;
-- incompatibilidades de versão;
-- readiness para evaluation.
-
-O `darp doctor` deve continuar sendo essencialmente diagnóstico/read-only.
+Such a runtime requires a separate architectural decision.
 
 ---
 
-## 13. O que DARP não deve se tornar
+# 19. Design Principles
 
-### Não é um LLM provider
-Não deve treinar ou hospedar modelos frontier.
+The Harness follows:
 
-### Não é uma IDE
-Deve integrar com IDEs.
-
-### Não é um clone de coding assistant
-Não deve replicar Claude Code, Codex ou Copilot feature-by-feature.
-
-### Não é um model runtime
-Deve integrar com runtimes locais.
-
-### Não é um workflow engine genérico
-Workflows devem permanecer focados em AI-assisted engineering.
-
-### Não é um marketplace na primeira fase
-Registry e package semantics devem amadurecer antes de uma marketplace.
+1. Declarative composition
+2. Vendor neutrality
+3. Agent neutrality
+4. Open standards
+5. Explicit activation
+6. Least privilege
+7. Reproducibility
+8. Deterministic validation
+9. Compatibility awareness
+10. Evaluability
+11. Extensibility
+12. Source-of-truth discipline
 
 ---
 
-## 14. Impacto no roadmap
+# 20. Final Model
 
-O Harness deve ser introduzido incrementalmente.
+The DARP Harness should be understood as:
 
-### Fase 1 — Foundation
+> **The declarative, project-level composition and governance contract for agentic software engineering.**
 
-1. Definir conceito de Harness.
-2. Definir abstração de provider.
-3. Definir composição de assets.
-4. Definir vocabulário de segurança e permissões.
+It composes capabilities.
 
-### Fase 2 — Specification
+It does not redefine them.
 
-5. Harness Manifest Specification.
-6. Provider Profile Specification.
-7. Tool Policy Specification.
-8. Evaluation Contract Specification.
+It governs them.
 
-### Fase 3 — Implementation
+It does not execute them.
 
-9. Harness discovery.
-10. Harness validation.
-11. Provider detection.
-12. Local provider metadata/integration.
-13. Evaluation support.
+It provides a common project-level abstraction.
 
-### Fase 4 — Ecosystem
-
-14. Registry para Harness packages.
-15. Dependency resolution.
-16. Provenance/signing.
-17. Compatibility metadata.
-18. Community Harnesses.
-
----
-
-## 15. Primeira Spec recomendada
-
-A primeira especificação formal **não deve ser `darp harness run`**.
-
-A recomendação é:
-
-> **Harness Manifest — formato declarativo e provider-agnostic para descrever assets, providers, ferramentas, permissões e quality gates necessários para um workflow agentic de engenharia.**
-
-Motivos:
-
-- estabelece a abstração central;
-- pode ser validado sem executar um agente;
-- preserva o não-objetivo de executar modelos;
-- cria contrato para futuras APIs/CLI;
-- permite registry;
-- habilita portabilidade entre providers;
-- encaixa naturalmente no SDD.
-
-### Exemplo conceitual
-
-```yaml
-apiVersion: darp.dev/v1alpha1
-kind: Harness
-
-metadata:
-  name: java-quarkus-development
-  version: 0.1.0
-
-provider:
-  preferred: anthropic/claude
-  fallback:
-    - openai/codex
-    - local/qwen-coder
-
-assets:
-  skills:
-    - java-review
-    - quarkus-development
-    - testing
-
-  mcpServers:
-    - github
-    - documentation
-
-tools:
-  shell: true
-  git: true
-  filesystem: workspace
-
-policy:
-  network: restricted
-  secrets: denied
-  requireTests: true
-
-evaluation:
-  required:
-    - build
-    - tests
-    - lint
-    - security
-```
-
-**Importante:** esse YAML é apenas ilustrativo. Não deve ser implementado como schema definitivo antes da Spec.
-
----
-
-## 16. Princípios arquiteturais
-
-A evolução para Harness adiciona estes princípios:
-
-1. **Model agnostic** — o Harness não depende de um provider.
-2. **Asset first** — capabilities são assets reutilizáveis e versionados.
-3. **Declarative** — descreve capacidades desejadas.
-4. **Reproducible** — o mesmo Harness produz ambiente comparável.
-5. **Least privilege** — agentes recebem somente permissões necessárias.
-6. **Evaluable** — tarefas possuem critérios objetivos.
-7. **Observable** — ações importantes são auditáveis.
-8. **Composable** — skills, MCP, providers e workflows compõem-se.
-9. **Portable** — assets funcionam em ambientes compatíveis.
-10. **Open standards** — priorizar padrões interoperáveis.
-
----
-
-## 17. Conclusão
-
-A oportunidade estratégica do DARP está em ocupar a camada entre **AI assets e engineering execution**.
-
-```text
-                DARP
-                 |
-        Assets + Harness
-                 |
-     +-----------+-----------+
-     |           |           |
-   Claude      Codex      Local
-     |           |           |
-     +-----------+-----------+
-                 |
-          MCP / Skills / Tools
-                 |
-          CI/CD / Evaluation
-                 |
-              Software
-```
-
-A aposta estratégica é:
-
-> **DARP deve tornar capacidades de engenharia agentic tão portáveis, versionáveis, reproduzíveis e governáveis quanto os pacotes de software são hoje.**
-
-### Próximo passo
-
-O próximo artefato recomendado é a **Spec do Harness Manifest**, seguindo o ciclo SDD existente no projeto:
-
-```text
-Spec
-  ↓
-Clarification
-  ↓
-ADR
-  ↓
-Plan
-  ↓
-Tasks
-  ↓
-Implementation
-```
-
-Nenhuma implementação de Harness deve começar antes dessa especificação ser aprovada.
+It does not replace the agents that consume that environment.

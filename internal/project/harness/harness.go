@@ -244,7 +244,7 @@ func validateAssetReference(field string, node *yaml.Node, diagnostics *[]Diagno
 }
 
 func validateAssetPath(field, value string, diagnostics *[]Diagnostic) {
-	if strings.Contains(value, "\\") || path.IsAbs(value) || filepath.IsAbs(filepath.FromSlash(value)) {
+	if strings.Contains(value, "\\") || path.IsAbs(value) || filepath.IsAbs(filepath.FromSlash(value)) || hasWindowsDrivePrefix(value) {
 		*diagnostics = append(*diagnostics, Diagnostic{Path: field, Message: "path must be relative to the project"})
 		return
 	}
@@ -252,6 +252,13 @@ func validateAssetPath(field, value string, diagnostics *[]Diagnostic) {
 	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
 		*diagnostics = append(*diagnostics, Diagnostic{Path: field, Message: "path must remain inside the project"})
 	}
+}
+
+// hasWindowsDrivePrefix detects drive-rooted paths independently of the host OS.
+func hasWindowsDrivePrefix(value string) bool {
+	return len(value) >= 3 &&
+		((value[0] >= 'a' && value[0] <= 'z') || (value[0] >= 'A' && value[0] <= 'Z')) &&
+		value[1] == ':' && value[2] == '/'
 }
 
 func sortDiagnostics(diagnostics []Diagnostic) {
