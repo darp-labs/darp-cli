@@ -2,7 +2,8 @@
 
 > Direção estratégica revisada do DARP Harness após análise do mercado de agent runtimes, coding agents e padrões de interoperabilidade.
 
-**Status:** Direção estratégica revisada  
+**Status:** Direção estratégica revisada
+
 **Escopo:** arquitetura, posicionamento e limites de produto; não implica implementação imediata.
 
 ## 1. Posicionamento
