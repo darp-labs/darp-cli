@@ -9,6 +9,9 @@ as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- Skill compartilhada para criar branches e commits focados e abrir pull
+  requests via `gh`, preenchendo o template do repositório quando disponível;
+  publicada para Codex, GitHub Copilot e Claude Code.
 - Comando `darp init` para inicializar projetos DARP com os contratos, a
   configuração base e a estrutura compartilhada de skills.
 - Comando `darp doctor` para diagnosticar projetos DARP sem alterar arquivos,
