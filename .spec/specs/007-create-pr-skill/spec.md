@@ -2,7 +2,7 @@
 
 ## Status
 
-Approved — implementation in progress.
+Completed — implementation and validation complete.
 
 ## Contexto
 
@@ -54,12 +54,13 @@ alterações alheias ao pedido ou ignorar o template de pull request do reposit�
 
 ## Critérios de aceitação
 
-- [ ] Os três caminhos contêm um `SKILL.md` idêntico e válido.
-- [ ] As instruções incluem branch, commit, push, PR via `gh` e tratamento do
+- [x] Os três caminhos contêm um `SKILL.md` idêntico e válido.
+- [x] As instruções incluem branch, commit, push, PR via `gh` e tratamento do
       template existente.
-- [ ] As instruções preservam alterações existentes e não promovem merge.
-- [ ] `quick_validate.py` valida a skill canônica e `git diff --check` passa.
-- [ ] O changelog registra a skill como mudança de governança disponível aos
+- [x] As instruções preservam alterações existentes e não promovem merge.
+- [x] `quick_validate.py` valida a skill canônica e `git diff --check` passa
+      nos arquivos desta especificação.
+- [x] O changelog registra a skill como mudança de governança disponível aos
       contribuidores.
 
 ## Riscos e questões em aberto
