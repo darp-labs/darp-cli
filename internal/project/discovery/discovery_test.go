@@ -56,6 +56,120 @@ func TestDiscoverSingleRootFileAsset(t *testing.T) {
 	}
 }
 
+func TestDiscoverFindsMultipleSkillsInSupportedRoot(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".github/skills/review/SKILL.md")
+	writeFixture(t, root, ".github/skills/testing/SKILL.md")
+
+	report := Discover(root)
+	want := []asset.Asset{
+		{Path: ".github/skills/review/SKILL.md", Family: asset.FamilyGitHub, Type: asset.TypeSkill},
+		{Path: ".github/skills/testing/SKILL.md", Family: asset.FamilyGitHub, Type: asset.TypeSkill},
+	}
+	if !reflect.DeepEqual(report.Found, want) {
+		t.Fatalf("unexpected skills\nwant: %#v\ngot:  %#v", want, report.Found)
+	}
+}
+
+func TestDiscoverSortsSkillsAcrossSupportedRoots(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".gemini/skills/gemini/SKILL.md")
+	writeFixture(t, root, ".codex/skills/codex/SKILL.md")
+	writeFixture(t, root, ".github/skills/github/SKILL.md")
+
+	got := Discover(root).Found
+	want := []asset.Asset{
+		{Path: ".codex/skills/codex/SKILL.md", Family: asset.FamilyCodex, Type: asset.TypeSkill},
+		{Path: ".gemini/skills/gemini/SKILL.md", Family: asset.FamilyGemini, Type: asset.TypeSkill},
+		{Path: ".github/skills/github/SKILL.md", Family: asset.FamilyGitHub, Type: asset.TypeSkill},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("discovery must be sorted by path\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func TestDiscoverRequiresSupportedSkillFilename(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".github/skills/review/skill.md")
+	writeFixture(t, root, ".github/skills/incomplete/README.md")
+	if err := os.MkdirAll(filepath.Join(root, ".github/skills/empty"), 0o755); err != nil {
+		t.Fatalf("mkdir incomplete skill: %v", err)
+	}
+
+	if report := Discover(root); !report.Empty() {
+		t.Fatalf("unsupported skill filenames and directories must not be discovered: %#v", report)
+	}
+}
+
+func TestDiscoverReportsSameNamedSkillsAcrossSupportedRootsAsConflict(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".github/skills/review/SKILL.md")
+	writeFixture(t, root, ".claude/skills/review/SKILL.md")
+
+	report := Discover(root)
+	if len(report.Found) != 0 || len(report.SemanticConflicts) != 1 {
+		t.Fatalf("expected same-named skills to be excluded as a semantic conflict: %#v", report)
+	}
+	conflict := report.SemanticConflicts[0]
+	if conflict.Category != string(asset.TypeSkill) || conflict.Name != "review" || len(conflict.Assets) != 2 {
+		t.Fatalf("unexpected skill conflict: %#v", conflict)
+	}
+}
+
+func TestDiscoverReflectsSupportedSkillChangesBetweenPasses(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".github/skills/first/SKILL.md")
+
+	first := Discover(root)
+	if len(first.Found) != 1 || first.Found[0].Path != ".github/skills/first/SKILL.md" {
+		t.Fatalf("unexpected first discovery: %#v", first)
+	}
+
+	writeFixture(t, root, ".github/skills/second/SKILL.md")
+	second := Discover(root)
+	wantAfterAddition := []asset.Asset{
+		{Path: ".github/skills/first/SKILL.md", Family: asset.FamilyGitHub, Type: asset.TypeSkill},
+		{Path: ".github/skills/second/SKILL.md", Family: asset.FamilyGitHub, Type: asset.TypeSkill},
+	}
+	if !reflect.DeepEqual(second.Found, wantAfterAddition) {
+		t.Fatalf("unexpected discovery after addition\nwant: %#v\ngot:  %#v", wantAfterAddition, second.Found)
+	}
+
+	if err := os.Remove(filepath.Join(root, ".github/skills/first/SKILL.md")); err != nil {
+		t.Fatalf("remove first skill: %v", err)
+	}
+	third := Discover(root)
+	wantAfterRemoval := []asset.Asset{
+		{Path: ".github/skills/second/SKILL.md", Family: asset.FamilyGitHub, Type: asset.TypeSkill},
+	}
+	if !reflect.DeepEqual(third.Found, wantAfterRemoval) {
+		t.Fatalf("unexpected discovery after removal\nwant: %#v\ngot:  %#v", wantAfterRemoval, third.Found)
+	}
+}
+
+// This regression fixture verifies that discovery no longer reports the
+// deleted supported skill after the workspace changes. Expected registration
+// of the added .agents skills is deferred to its planned specification.
+func TestDiscoverRegressionScenarioGitHubRemovalAndAgentSkillsAddition(t *testing.T) {
+	root := t.TempDir()
+	writeFixture(t, root, ".github/skills/removed/SKILL.md")
+	if got := Discover(root).Found; len(got) != 1 || got[0].Path != ".github/skills/removed/SKILL.md" {
+		t.Fatalf("unexpected initial discovery: %#v", got)
+	}
+
+	if err := os.Remove(filepath.Join(root, ".github/skills/removed/SKILL.md")); err != nil {
+		t.Fatalf("remove GitHub skill: %v", err)
+	}
+	writeFixture(t, root, ".agents/skills/first/SKILL.md")
+	writeFixture(t, root, ".agents/skills/second/SKILL.md")
+
+	for _, found := range Discover(root).Found {
+		if found.Path == ".github/skills/removed/SKILL.md" {
+			t.Fatalf("deleted supported skill remained in discovery results: %#v", found)
+		}
+	}
+}
+
 func TestDiscoverRecursiveAndMultiplePatterns(t *testing.T) {
 	root := t.TempDir()
 	writeFixture(t, root, ".github/instructions/nested/caveman.instructions.md")
@@ -228,6 +342,18 @@ func TestMatchGlob(t *testing.T) {
 	for _, test := range tests {
 		if got := matchGlob(test.glob, test.rel); got != test.want {
 			t.Fatalf("matchGlob(%q, %q) = %v, want %v", test.glob, test.rel, got, test.want)
+		}
+	}
+}
+
+func TestClassifyRejectsAbsoluteAndTraversalPaths(t *testing.T) {
+	for _, path := range []string{
+		"../.github/skills/review/SKILL.md",
+		"../../.github/skills/review/SKILL.md",
+		filepath.Join(string(filepath.Separator), "tmp", ".github", "skills", "review", "SKILL.md"),
+	} {
+		if got := Classify(path); len(got) != 0 {
+			t.Errorf("Classify(%q) = %#v, want no classifications", path, got)
 		}
 	}
 }
