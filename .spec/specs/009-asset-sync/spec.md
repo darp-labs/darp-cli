@@ -3,8 +3,12 @@
 ## Status
 
 Approved — especificação aprovada formalmente pelo responsável do projeto em
-2026-10-14. Implementação autorizada somente conforme esta Spec e o plano e as
-tasks aprovados.
+2026-10-14, com decisões complementares registradas e alinhadas em 2026-10-19.
+Adendo autorizado em 2026-10-23 para validar skills conforme o padrão Agent
+Skills publicado em https://agentskills.io/specification.md. Implementação
+autorizada somente conforme esta Spec e o plano e as tasks aprovados.
+Implementação concluída em 2026-10-23; validações e decisão final estão
+registradas em `tasks.md`.
 
 ## Contexto
 
@@ -109,7 +113,14 @@ darp sync [--dry-run]
 - `darp sync` calcula e aplica a reconciliação permitida pela regra de
   ownership definida nesta Spec.
 - `darp sync --dry-run` calcula e apresenta o mesmo relatório sem modificar
-  arquivos.
+  arquivos. Se `darp.yml` estiver ausente, calcula em memória o resultado do
+  bootstrap padrão de `init` e da reconciliação subsequente; não executa ações
+  de escrita do bootstrap nem cria diretórios ou arquivos.
+- Se `darp.yml` não existir, `darp sync` executa o bootstrap padrão de
+  `darp init` e, em seguida, reconcilia o inventário. Isso inclui a configuração
+  base e os contratos/skills padrão ausentes. Não altera o comportamento de
+  invocações de `darp init` nem modifica arquivos existentes protegidos pelo
+  contrato de inicialização.
 - A ausência de opções preserva o comportamento de todos os comandos
   existentes, em especial `darp init`.
 - Argumentos desconhecidos retornam erro de uso e não modificam arquivos.
@@ -124,8 +135,16 @@ removidos automaticamente; devem ser preservados e reportados.
 1. Os padrões externos de arquivo da Spec 005 continuam reconhecidos e
    registrados em `assets` com `path`, `family` e `type`.
 2. Skill DARP é reconhecida em `.agents/skills/<nome>/SKILL.md`, onde `<nome>`
-   é um único segmento de diretório válido. O diretório deve ser filho direto
-   de `.agents/skills/`; `SKILL.md` deve ser arquivo regular.
+  é o nome literal de um diretório filho direto de `.agents/skills/` e
+  `SKILL.md` deve ser arquivo regular com frontmatter compatível com o padrão
+  Agent Skills. O `name` deve conter de 1 a 64 caracteres ASCII minúsculos,
+  dígitos ou hífens, sem hífen inicial/final nem hífens consecutivos, e deve
+  corresponder exatamente ao nome do diretório. `description` é obrigatória,
+  não vazia e limitada a 1024 caracteres. Se presentes, `compatibility` deve
+  conter de 1 a 500 caracteres, `metadata` deve ser um mapa de strings para
+  strings, e `license` e `allowed-tools` devem ser strings. Campos futuros
+  desconhecidos são preservados e não invalidam a skill. O nome e o caminho
+  aprovados são preservados exatamente, sem normalização.
 3. Uma skill encontrada nessa estrutura é registrada como
    `skills.<nome>: .agents/skills/<nome>`.
 4. As quatro skills de governança continuam válidas e registradas nos caminhos
@@ -134,9 +153,13 @@ removidos automaticamente; devem ser preservados e reportados.
    proteção para as quatro skills.
 5. Diretórios ausentes são opcionais e não geram erro. Arquivos que não
    correspondem aos padrões documentados não são registrados.
-6. Nomes de skill duplicados após normalização, conflitos semânticos, symlinks,
-   arquivos não regulares e estruturas incompletas não são registrados
-   automaticamente; são reportados conforme o formato final de diagnóstico.
+6. Uma entrada existente em `skills` com o mesmo nome e caminho canônico é
+  mantida. Se o nome já existir apontando para outro caminho, a entrada manual
+  é preservada e o conflito é reportado; nunca é sobrescrita. Symlinks,
+  arquivos não regulares, estruturas incompletas e skills fora do padrão
+  Agent Skills não são registrados automaticamente e são reportados como
+  ignorados com aviso. O escopo da entrada inválida é desconhecido e impede a
+  remoção de ownership gerenciado correspondente nesta execução.
 
 ### Planejamento da reconciliação
 
@@ -166,6 +189,10 @@ produzir o mesmo plano.
   existentes de skills mantidas e chaves adicionais em registros de assets.
 - Não substituir valor manual existente por caminho calculado sem uma regra de
   conflito explicitamente aprovada.
+- Para skills, a identidade usa o nome literal do diretório, sem normalização
+  de caixa, pontuação ou caracteres Unicode. Uma chave existente com caminho
+  diferente é conflito: manter o valor existente, não adotar a entrada como
+  gerenciada e reportar o conflito.
 - Não remover dados sem ownership conhecido pela regra de sincronização.
 - Guardar o ownership gerenciado no próprio `darp.yml`, em metadados namespaced
   sob `darp.sync`. O ledger deve identificar skills por nome e caminho e assets
@@ -197,9 +224,16 @@ produzir o mesmo plano.
   ignorado, conforme decisão já tomada pelo responsável do projeto.
 - Uma raiz/subárvore que não pôde ser lida é estado desconhecido, não prova de
   remoção. Entradas sob esse escopo não podem ser removidas nessa execução.
+- Symlinks, estruturas incompletas, candidatos não regulares e conflitos também
+  tornam desconhecido o escopo correspondente. Entradas gerenciadas nesse
+  escopo devem ser preservadas e reportadas, não removidas.
 - Outras raízes legíveis podem ser sincronizadas se o manifesto e a gravação
   forem seguros; o relatório deve identificar claramente o resultado parcial.
-- Erro ao ler ou validar `darp.yml` impede qualquer escrita.
+- Se `darp.yml` estiver ausente, o modo aplicado realiza o bootstrap definido
+  na Interface e então sincroniza. Em `--dry-run`, calcular o estado que esse
+  bootstrap produziria em memória e usá-lo como entrada da reconciliação, sem
+  criar, alterar ou remover qualquer arquivo ou diretório. Erro ao ler ou
+  validar um `darp.yml` existente impede qualquer escrita.
 - Erro ao persistir deve preservar o arquivo original e retornar falha.
 
 ### Códigos de saída
@@ -269,7 +303,8 @@ de resultado e os códigos definidos nesta Spec.
 - **R1 — Explícito:** apenas `darp sync` inicia sincronização. `darp init`,
   `darp doctor` e comandos Harness não adquirem efeitos de sincronização.
 - **R2 — Descoberta:** aplicar padrões da Spec 005 e incluir
-  `.agents/skills/<nome>/SKILL.md` conforme o contrato desta Spec.
+  `.agents/skills/<nome>/SKILL.md` conforme o contrato desta Spec, preservando
+  o nome literal do diretório e sem normalização.
 - **R3 — Inclusão:** adicionar entradas novas ao campo correspondente sem
   duplicar identidades.
 - **R4 — Remoção segura:** remover somente entradas comprovadamente gerenciadas e
@@ -283,15 +318,26 @@ de resultado e os códigos definidos nesta Spec.
 - **R7 — Determinismo:** descoberta, plano, mensagens e ordenação são estáveis
   para o mesmo estado observável.
 - **R8 — Leitura parcial:** erros de leitura geram aviso/ignorado e impedem
-  remoções no escopo não lido.
-- **R9 — Falha segura:** manifesto inválido, estrutura ambígua ou erro de escrita
-  não causa perda nem gravação parcial.
+  remoções no escopo não lido. Symlinks, estruturas incompletas, candidatos
+  não regulares e conflitos também bloqueiam remoções no escopo correspondente.
+- **R9 — Falha segura:** `darp.yml` inválido, duplicado ou estruturalmente não
+  editável, ou erro de escrita, não causa perda nem gravação parcial. Conflitos
+  de descoberta são reportados e preservados; não impedem alterações seguras em
+  outros escopos, mas bloqueiam remoções no escopo conflitante.
 - **R10 — Prévia:** `--dry-run` mostra o plano sem alterar o filesystem.
 - **R11 — Relatório:** informar contagem e identidade de itens adicionados,
   removidos, mantidos, ignorados e avisos.
 - **R12 — Compatibilidade:** manter os contratos de `darp init`, `darp doctor`,
-  `darp harness inspect`, `darp harness validate` e `darp harness init` da Spec
-  008; Harness permanece separado em `.darp/harness.yaml`.
+  `darp help` e `darp version`. Não alterar nem depender dos comandos Harness:
+  a Spec 008 ainda não foi implementada, e esta feature não a implementa.
+  Harness permanece separado em `.darp/harness.yaml`.
+- **R13 — Formato Agent Skills:** registrar em `skills` somente diretórios
+  filhos diretos cujo `SKILL.md` tenha frontmatter YAML válido com `name` e
+  `description` válidos conforme a especificação Agent Skills. O nome deve
+  obedecer às restrições de formato e corresponder literalmente ao diretório.
+  Campos opcionais definidos pelo padrão devem respeitar seus tipos e limites.
+  Skills fora do padrão são ignoradas e reportadas, e seu escopo não pode ser
+  tratado como prova de remoção.
 
 ## Fluxos
 
@@ -326,20 +372,34 @@ de resultado e os códigos definidos nesta Spec.
       no destino correto (`assets` ou `skills`).
 - [ ] Duas skills com identidade conflitante não são escolhidas automaticamente.
 - [ ] Raízes opcionais ausentes não geram falha.
-- [ ] Estruturas incompletas e nomes inválidos são ignorados e reportados.
-- [ ] Erros de leitura geram aviso e impedem remoções no escopo afetado.
+- [ ] Estruturas incompletas e skills fora do padrão Agent Skills são ignoradas
+  e reportadas.
+- [ ] Frontmatter valida `name`, `description` e os tipos/limites dos campos
+  opcionais definidos pelo padrão; `name` corresponde ao diretório.
+- [ ] Erros de leitura, symlinks, estruturas incompletas, candidatos não
+  regulares e conflitos impedem remoções no escopo correspondente.
+- [ ] Nomes de skills são preservados literalmente, sem normalização; conflito
+  com valor manual mantém o valor e é reportado.
 - [ ] Campos extras de topo e campos adicionais de registros mantidos são
       preservados.
 - [ ] Manifesto inválido ou YAML duplicado não é alterado.
 - [ ] `--dry-run` não modifica arquivos e exibe o mesmo plano da execução
       aplicada.
+- [ ] Sem `darp.yml`, `--dry-run` simula em memória o bootstrap padrão e a
+      reconciliação, apresenta o resultado equivalente à execução aplicada e
+      deixa inalterado todo o filesystem, inclusive arquivos e diretórios que
+      seriam criados pelo bootstrap.
 - [ ] Segunda sincronização sem mudanças mantém o arquivo byte a byte idêntico.
 - [ ] Falha de persistência não deixa manifesto parcial nem modifica assets.
-- [ ] `darp init`, `darp doctor` e os comandos da Spec 008 preservam seus
-      comportamentos aprovados.
+- [ ] `darp sync` inicializa um projeto sem `darp.yml` com o mesmo bootstrap
+  padrão de `darp init` e então reconcilia o inventário.
+- [ ] `darp init`, `darp doctor`, `darp help` e `darp version` preservam seus
+  comportamentos; a implementação não altera nem depende dos comandos ainda
+  não implementados da Spec 008.
 - [ ] Testes unitários cobrem parser, propriedade/ownership, plano de diff,
       ordenação, falhas e idempotência; testes de CLI cobrem saída e códigos.
-- [ ] README, CHANGELOG e roadmap são atualizados conforme a prática vigente.
+- [ ] README e CHANGELOG são atualizados conforme a prática vigente; o roadmap
+  permanece inalterado.
 
 ## Compatibilidade e riscos
 
@@ -349,11 +409,15 @@ de resultado e os códigos definidos nesta Spec.
   essa remoção antes da escrita.
 - `skills` é um mapa nome→caminho. Entradas fora do formato canônico de skill
   ficam fora do ledger e são preservadas.
+- Nomes de diretório são identidades literais, inclusive caixa e caracteres
+  Unicode. Se uma chave de `skills` já apontar para outro caminho, ela não é
+  adotada nem sobrescrita; o conflito é reportado.
 - `assets` é uma lista de mapas com identidade `(path, family, type)`. Campos
   adicionais de entradas mantidas são preservados; campos de um registro
   removido acompanham a remoção e aparecem na prévia.
 - Uma raiz inacessível não prova que seus assets foram removidos. A sync não
-  remove entradas no escopo não lido.
+  remove entradas no escopo não lido. O mesmo vale para escopos não observáveis
+  por symlink, estrutura incompleta, tipo não regular ou conflito.
 - O ledger deve coexistir com campos desconhecidos sob `darp` e não pode
   invalidar leitores atuais que ignorem essa extensão.
 
@@ -364,7 +428,7 @@ de resultado e os códigos definidos nesta Spec.
 - Spec 002 — Contrato do Doctor para `skills` e assets.
 - Spec 008 — Harness Lifecycle, para compatibilidade de CLI; a Spec 008 está
   aprovada, mas sua implementação ainda não está concluída no estado atual do
-  repositório.
+  repositório. A Spec 009 não depende dos comandos Harness e não os implementa.
 - `internal/project/discovery`, `internal/project/asset`,
   `internal/project/init` e `internal/project/doctor`.
 
@@ -385,14 +449,20 @@ do contrato desta Spec:
 4. **Skills de governança:** não são protegidas contra remoção; `sync` espelha o
    filesystem também para as quatro skills conhecidas.
 5. **Leitura parcial:** erros de leitura geram warning/ignorado; as entradas do
-   escopo não lido não são removidas. Se as demais alterações seguras forem
-   aplicadas, o código de saída é `0`.
+  escopo não lido não são removidas. Symlinks, estruturas incompletas,
+  candidatos não regulares e conflitos também bloqueiam remoções no escopo
+  afetado. Se as demais alterações seguras forem aplicadas, o código de saída
+  é `0`.
 6. **Roadmap:** não atualizar como parte desta feature, conforme decisão
    aprovada pelo responsável do projeto.
+7. **Bootstrap:** se `darp.yml` estiver ausente, `sync` executa o bootstrap
+   padrão de `init` e depois reconcilia; em `--dry-run`, simula ambos em memória
+   sem efeitos no filesystem. Isso não muda o comportamento de `init`.
+8. **Identidade de skills:** preservar o nome literal do diretório, sem
+   normalização. Conflito com chave manual é reportado sem sobrescrita.
 
 ## Próximos passos SDD
 
-O próximo passo é revisar e aprovar o plano e as tasks em
-`.spec/specs/009-asset-sync/` antes da implementação. Não é necessário ADR neste
-momento; um ADR será criado somente se a implementação revelar uma decisão
-arquitetural separada que não esteja resolvida por esta Spec.
+Não é necessário ADR neste momento; um ADR será criado somente se a
+implementação revelar uma decisão arquitetural separada que não esteja
+resolvida por esta Spec.

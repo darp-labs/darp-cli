@@ -7,6 +7,7 @@ import (
 
 	"github.com/darpbr/darp-cli/internal/project/doctor"
 	projectinit "github.com/darpbr/darp-cli/internal/project/init"
+	projectsync "github.com/darpbr/darp-cli/internal/project/sync"
 )
 
 const (
@@ -23,6 +24,7 @@ type commandHelp struct {
 var commandCatalog = []commandHelp{
 	{Name: "init", Summary: "Initialize a DARP project"},
 	{Name: "doctor", Summary: "Diagnose DARP project integrity"},
+	{Name: "sync", Summary: "Reconcile the DARP asset inventory"},
 	{Name: "help", Summary: "Show CLI help"},
 	{Name: "version", Summary: "Show CLI version"},
 }
@@ -97,12 +99,57 @@ func RunWithVersion(args []string, stdout io.Writer, stderr io.Writer, lifecycle
 			}
 		}
 		return result.ExitCode()
+	case "sync":
+		dryRun := false
+		if len(args) > 2 || (len(args) == 2 && args[1] != "--dry-run") {
+			if !writef(stderr, "error: unknown sync argument\n") {
+				return 1
+			}
+			return 1
+		}
+		if len(args) == 2 {
+			dryRun = true
+		}
+		result, err := (projectsync.Service{Root: "."}).Reconcile(dryRun)
+		if err != nil {
+			if !writef(stderr, "error: %v\n", err) {
+				return 1
+			}
+			return 1
+		}
+		if !writef(stdout, "%s", renderSync(result, dryRun)) {
+			return 1
+		}
+		return 0
 	default:
 		if !writef(stderr, "unknown command %q\n\n%s", args[0], renderHelp()) {
 			return 1
 		}
 		return 1
 	}
+}
+
+func renderSync(result projectsync.Result, dryRun bool) string {
+	var b strings.Builder
+	if dryRun {
+		b.WriteString("DARP sync preview\n")
+	} else {
+		b.WriteString("DARP sync\n")
+	}
+	for _, group := range []struct {
+		name  string
+		items []projectsync.Item
+	}{{"Added", result.Added}, {"Removed", result.Removed}, {"Kept", result.Kept}, {"Ignored", result.Ignored}, {"Warnings", result.Warnings}} {
+		fmt.Fprintf(&b, "\n%s (%d)\n", group.name, len(group.items))
+		for _, item := range group.items {
+			identity := item.Identity
+			if item.Detail != "" {
+				identity += " — " + item.Detail
+			}
+			fmt.Fprintf(&b, "  %s\n", identity)
+		}
+	}
+	return b.String()
 }
 
 func writef(writer io.Writer, format string, args ...any) bool {

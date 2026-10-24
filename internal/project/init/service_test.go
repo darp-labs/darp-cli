@@ -503,6 +503,31 @@ func TestInitializeRegistersDiscoveredAssets(t *testing.T) {
 	}
 }
 
+func TestInitializeDoesNotDiscoverDARPAgentSkills(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	skillPath := filepath.Join(projectDir, ".agents/skills/custom-review/SKILL.md")
+	skillContent := []byte("---\nname: custom-review\ndescription: Project skill\n---\n")
+	if err := os.MkdirAll(filepath.Dir(skillPath), 0o755); err != nil {
+		t.Fatalf("mkdir skill directory: %v", err)
+	}
+	if err := os.WriteFile(skillPath, skillContent, 0o644); err != nil {
+		t.Fatalf("write custom skill: %v", err)
+	}
+
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+
+	config, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	if strings.Contains(string(config), "custom-review") {
+		t.Fatalf("init must not register DARP skills discovered for sync:\n%s", config)
+	}
+	assertFileContent(t, skillPath, string(skillContent))
+}
+
 func TestInitializeDoesNotDuplicateAssetsOnRerun(t *testing.T) {
 	root := t.TempDir()
 	projectDir := filepath.Join(root, "demo-project")

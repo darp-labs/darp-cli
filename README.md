@@ -212,11 +212,27 @@ These projections should not become independent sources of truth.
 ```bash
 darp init
 darp doctor
+darp sync [--dry-run]
 darp --help
 darp --version
 ```
 
 The current implementation provides the DARP project baseline, governance contracts, asset discovery and Harness manifest validation.
+
+`darp sync` explicitly reconciles the `skills` and `assets` inventory in
+`darp.yml` with recognized local assets and direct skills under
+`.agents/skills/<name>/SKILL.md`. These skills must follow the Agent Skills
+frontmatter format: a valid `name` matching the directory and a non-empty
+`description`, with optional fields checked against the format's types and
+limits. Invalid or incomplete skills are reported and are not registered. Use
+`darp sync --dry-run` to review additions and removals first. On its first run,
+it adopts only legacy entries that match the discovery contracts; later
+removals require ownership recorded under `darp.sync.managed`. It preserves
+unrecognized entries and reports paths it could not safely inspect. A missing
+`darp.yml` is bootstrapped before an applied sync; the dry run simulates that
+bootstrap without writing files. Warnings for partially observed paths still
+produce exit code `0`; usage, manifest, and operational failures produce exit
+code `1`.
 
 ---
 

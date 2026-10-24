@@ -2,8 +2,12 @@
 
 ## Status
 
-Draft — preparado a partir da Spec 009 aprovada. O plano deve ser revisado e
-aprovado antes do início da implementação.
+Approved — plano revisado e aprovado em 2026-10-19, alinhado à Spec 009.
+Adendo autorizado em 2026-10-23 para validar skills conforme o padrão Agent
+Skills publicado em https://agentskills.io/specification.md. Implementação
+autorizada somente conforme a Spec, este plano e as tasks aprovadas.
+Implementação concluída em 2026-10-23; os gates finais passaram conforme
+evidenciado em `tasks.md`.
 
 ## Related Specification
 
@@ -22,16 +26,29 @@ constrói um plano determinístico com adições, remoções, itens mantidos,
 ignorados e avisos; somente depois de validar todo o plano poderá gravar o
 `darp.yml`.
 
-Estender o pacote de descoberta para reconhecer skills DARP em
-`.agents/skills/<nome>/SKILL.md`, mantendo-as distintas de assets externos: as
-skills vão para `skills`; os padrões externos da Spec 005 vão para `assets`.
-Tratar `.agents/skills/` como raiz opcional e não percorrer subdiretórios
-arbitrários abaixo dela.
+Adicionar uma operação de descoberta específica para `sync` que reconheça
+skills DARP em `.agents/skills/<nome>/SKILL.md`, mantendo-as distintas de assets
+externos: as skills vão para `skills`; os padrões externos da Spec 005 vão para
+`assets`. Não alterar a saída de `discovery.Discover` consumida por `darp init`;
+testar que `init` não registra nem modifica skills customizadas em
+`.agents/skills/`. Tratar essa raiz como opcional e não percorrer subdiretórios
+arbitrários abaixo dela. Validar frontmatter e campos conforme a Spec 009/R13;
+reportar skills incompatíveis como ignoradas e preservar ownership dentro do
+escopo não validado.
+
+Usar o nome literal do diretório como chave e caminho, sem normalização, após
+validar o formato Agent Skills. Ao adotar entradas legadas, exigir um nome que
+seja um único componente e o caminho canônico exato; nunca normalizar `..`, `/`
+ou outros segmentos. Se a chave já existir em `skills` apontando para outro
+caminho, preservar o valor manual, não adotar a entrada como gerenciada e
+reportar o conflito.
 
 Propagar erros de listagem, stat e inspeção como itens ignorados com motivo
 estável e warning no relatório. A descoberta deve indicar o caminho/escopo que
 falhou, para que o reconciliador não interprete uma raiz ou subárvore inacessível
-como remoção. Symlinks continuam sem ser seguidos.
+como remoção. Symlinks continuam sem ser seguidos. Erros de leitura, symlinks,
+estruturas incompletas, candidatos não regulares e conflitos tornam o escopo
+correspondente desconhecido e impedem remoções nesse escopo.
 
 O serviço de sync deve ler o YAML como árvore para preservar campos
 desconhecidos, comentários quando possível e dados adicionais de registros
@@ -52,14 +69,21 @@ registrar a decisão no review arquitetural antes de ampliar o escopo.
 
 Adicionar `darp sync` e `--dry-run` na CLI, com stdout determinístico para o
 relatório, código `0` para conclusão inclusive parcial com warnings e código `1`
-para falha segura/operacional. A escrita aplicada substitui `darp.yml` de forma
-atômica e preserva o original em erro. `darp init`, `darp doctor` e o pacote
-Harness não recebem comportamento novo nesta entrega.
+para falha segura/operacional. Se `darp.yml` estiver ausente, executar o
+bootstrap padrão por `internal/project/init` e depois reconciliar o inventário;
+se existir, não executar o bootstrap. Com `--dry-run` e sem `darp.yml`, simular
+em memória o estado produzido pelo bootstrap e reconciliar sobre esse estado,
+sem criar ou alterar arquivos ou diretórios. A escrita aplicada substitui
+`darp.yml` de forma atômica e preserva o original em erro. Não alterar o
+comportamento de `darp init`, Doctor, help/version ou Harness; não depender da
+implementação pendente dos comandos Harness da Spec 008.
 
 ## Áreas afetadas
 
-- `internal/project/discovery/` — descoberta das skills DARP, classificação,
-  erros/ignorados com escopo e cobertura de testes.
+- `internal/project/discovery/` — mecanismo específico de descoberta de skills
+  DARP para `sync`, validação Agent Skills, erros/ignorados com escopo e
+  cobertura de testes; preservar a saída de `discovery.Discover` usada por
+  `init`.
 - `internal/project/sync/` — novo plano de alterações, ledger de ownership,
   reconciliação, modo dry-run e escrita segura de `darp.yml`.
 - `internal/cli/` — roteamento, ajuda, argumentos, relatório e código de saída
@@ -99,7 +123,8 @@ originais dos assets nem o roadmap nesta etapa.
 ### M3 — Reconciliação segura do manifesto
 
 - Construir e validar o plano antes de qualquer escrita.
-- Bloquear remoção no escopo afetado por erro de leitura e continuar com outros
+- Bloquear remoção no escopo desconhecido por erro de leitura, symlink,
+  estrutura incompleta, candidato não regular ou conflito; continuar com outros
   escopos somente quando o resultado global puder ser persistido com segurança.
 - Garantir idempotência byte a byte quando não houver alterações.
 - Implementar substituição atômica do único arquivo `darp.yml`, com rollback ou
@@ -124,21 +149,30 @@ originais dos assets nem o roadmap nesta etapa.
 ## Estratégia de validação
 
 - Unit tests de descoberta para cada padrão externo vigente, skills em
-  `.agents/skills/`, diretórios ausentes, estruturas inválidas, conflitos,
-  ordenação e erros de leitura.
+  `.agents/skills/`, frontmatter Agent Skills válido/inválido, diretórios
+  ausentes, estruturas incompletas, conflitos, ordenação e erros de leitura.
+- Teste de regressão de `init` provando que skills DARP customizadas em
+  `.agents/skills/` não são adicionadas a `darp.yml` nem modificadas.
+- Teste de integração de `sync` sem `darp.yml`, provando que o bootstrap padrão
+  é criado e o inventário é reconciliado em seguida.
+- Teste de integração de `sync --dry-run` sem `darp.yml`, comparando o plano ao
+  da execução aplicada e verificando que nenhum arquivo ou diretório do
+  bootstrap é criado ou alterado.
 - Unit tests do plano para adoção de registros legados válidos e ausentes,
   preservação de registros desconhecidos, aplicação do ledger e remoção apenas
   de identidades gerenciadas.
 - Testes de sync para o caso real: remover skill GitHub, adicionar duas skills
   em `.agents/skills/`, executar sync e validar o inventário e ownership
   resultantes.
-- Testes de escopo parcial assegurando que erro de leitura gera warning/ignored
-  e não remove itens sob a raiz ou subárvore inacessível.
+- Testes de escopo parcial assegurando que erro de leitura, symlink, estrutura
+  incompleta, arquivo não regular ou conflito gera warning/ignored e impede
+  remoções das identidades no escopo não observado.
 - Testes de filesystem que comparem bytes e snapshots antes/depois de dry-run,
   falha de parsing, falha de escrita e segunda execução idempotente.
 - Testes de CLI para argumentos desconhecidos, saída ordenada e códigos `0`/`1`.
-- Testes de regressão confirmando que `darp init` não remove registros, que o
-  Doctor continua somente leitura e que Harness não é alterado.
+- Testes de regressão confirmando que `darp init` não remove registros nem
+  adota skills DARP customizadas, que o Doctor continua somente leitura e que
+  Harness não é alterado nem é dependência desta feature.
 - Executar testes focados e `go test ./...`; em seguida `make verify` e
   `git diff --check`.
 
@@ -157,6 +191,8 @@ exigiria decisão explícita.
 ## Premissas
 
 - A Spec 009 e este plano serão aprovados antes de implementação.
+- Em `--dry-run` sem `darp.yml`, o estado inicial do bootstrap é montado em
+  memória; nenhuma operação de escrita do `init` é chamada.
 - A decisão de adotar entradas legadas reconhecíveis é aplicada somente a
   identidades que correspondam exatamente às regras de discovery aprovadas.
 - Entradas fora dos contratos conhecidos e chaves de topo desconhecidas são
@@ -165,4 +201,8 @@ exigiria decisão explícita.
 - Avisos por leitura parcial não impedem sync seguro de outras raízes e resultam
   em código `0`.
 - A operação não precisa de rede, execução de assets, Harness ou Registry.
+- Skills válidas usam o nome literal do diretório, sem normalização; conflito
+  com chave já existente em `skills` preserva o valor manual e gera relatório.
+- Se `darp.yml` estiver ausente, `sync` chama o bootstrap padrão de `init` antes
+  da reconciliação. Isso não altera o comportamento de invocações de `init`.
 - O roadmap permanece inalterado nesta feature.
