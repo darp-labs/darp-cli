@@ -9,6 +9,9 @@ as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- Comando `darp sync` para reconciliar explicitamente skills e assets em
+  `darp.yml`, com ownership gerenciado, relatório de itens ignorados e opção
+  `--dry-run`.
 - Skill compartilhada para criar branches e commits focados e abrir pull
   requests via `gh`, preenchendo o template do repositório quando disponível;
   publicada para Codex, GitHub Copilot e Claude Code.
@@ -44,6 +47,10 @@ as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Corrigido
 
+- `darp sync` agora valida o frontmatter Agent Skills antes de registrar skills,
+  reporta estruturas inválidas sem remover ownership em escopos não observados,
+  serializa corretamente o manifesto simulado e rejeita entradas de skills
+  estruturalmente inválidas antes de gravar.
 - `darp init` agora ignora arquivos não suportados dentro dos diretórios
   convencionais de assets, evitando falhas durante a descoberta.
 - A descoberta agora centraliza a classificação oficial dos assets, reporta

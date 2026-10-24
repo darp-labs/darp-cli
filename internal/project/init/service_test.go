@@ -503,6 +503,31 @@ func TestInitializeRegistersDiscoveredAssets(t *testing.T) {
 	}
 }
 
+func TestInitializeDoesNotDiscoverDARPAgentSkills(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	skillPath := filepath.Join(projectDir, ".agents/skills/custom-review/SKILL.md")
+	skillContent := []byte("---\nname: custom-review\ndescription: Project skill\n---\n")
+	if err := os.MkdirAll(filepath.Dir(skillPath), 0o755); err != nil {
+		t.Fatalf("mkdir skill directory: %v", err)
+	}
+	if err := os.WriteFile(skillPath, skillContent, 0o644); err != nil {
+		t.Fatalf("write custom skill: %v", err)
+	}
+
+	if _, err := NewService(NewOSFileSystem()).Initialize(projectDir); err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+
+	config, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	if strings.Contains(string(config), "custom-review") {
+		t.Fatalf("init must not register DARP skills discovered for sync:\n%s", config)
+	}
+	assertFileContent(t, skillPath, string(skillContent))
+}
+
 func TestInitializeDoesNotDuplicateAssetsOnRerun(t *testing.T) {
 	root := t.TempDir()
 	projectDir := filepath.Join(root, "demo-project")
@@ -533,6 +558,103 @@ func TestInitializeDoesNotDuplicateAssetsOnRerun(t *testing.T) {
 	}
 	if !containsMessage(result, "Asset already registered .github/copilot-instructions.md (github/instruction)") {
 		t.Fatalf("expected already registered message, got %#v", result.Messages)
+	}
+}
+
+func TestInitializePreservesPreviouslyRegisteredMissingAsset(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	writeFixture := filepath.Join(projectDir, ".github/skills/review/SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(writeFixture), 0o755); err != nil {
+		t.Fatalf("mkdir skill directory: %v", err)
+	}
+	if err := os.WriteFile(writeFixture, []byte("# review\n"), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	service := NewService(NewOSFileSystem())
+	if _, err := service.Initialize(projectDir); err != nil {
+		t.Fatalf("first initialize: %v", err)
+	}
+	if err := os.Remove(writeFixture); err != nil {
+		t.Fatalf("remove skill: %v", err)
+	}
+
+	if _, err := service.Initialize(projectDir); err != nil {
+		t.Fatalf("second initialize: %v", err)
+	}
+	config, err := os.ReadFile(filepath.Join(projectDir, "darp.yml"))
+	if err != nil {
+		t.Fatalf("read darp.yml: %v", err)
+	}
+	if !strings.Contains(string(config), "path: .github/skills/review/SKILL.md") {
+		t.Fatalf("Spec 005 requires the removed asset registration to remain:\n%s", config)
+	}
+}
+
+func TestInitializeReportsPreviouslyRegisteredMissingAsset(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	skillPath := filepath.Join(projectDir, ".github/skills/review/SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(skillPath), 0o755); err != nil {
+		t.Fatalf("mkdir skill directory: %v", err)
+	}
+	if err := os.WriteFile(skillPath, []byte("# review\n"), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	service := NewService(NewOSFileSystem())
+	if _, err := service.Initialize(projectDir); err != nil {
+		t.Fatalf("first initialize: %v", err)
+	}
+	if err := os.Remove(skillPath); err != nil {
+		t.Fatalf("remove skill: %v", err)
+	}
+
+	result, err := service.Initialize(projectDir)
+	if err != nil {
+		t.Fatalf("second initialize: %v", err)
+	}
+	if !containsMessage(result, "missing asset .github/skills/review/SKILL.md") {
+		t.Fatalf("Spec 005 requires missing registered assets to be reported, got %#v", result.Messages)
+	}
+}
+
+func TestInitializeDoesNotReportRegisteredAssetMissingWhenDiscoveryConflicts(t *testing.T) {
+	projectDir := filepath.Join(t.TempDir(), "demo-project")
+	if err := os.Mkdir(projectDir, 0o755); err != nil {
+		t.Fatalf("mkdir project dir: %v", err)
+	}
+	writeFixture := filepath.Join(projectDir, ".github/skills/review/SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(writeFixture), 0o755); err != nil {
+		t.Fatalf("mkdir skill directory: %v", err)
+	}
+	if err := os.WriteFile(writeFixture, []byte("# review\n"), 0o644); err != nil {
+		t.Fatalf("write skill: %v", err)
+	}
+
+	service := NewService(NewOSFileSystem())
+	if _, err := service.Initialize(projectDir); err != nil {
+		t.Fatalf("first initialize: %v", err)
+	}
+	conflictingSkill := filepath.Join(projectDir, ".claude/skills/review/SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(conflictingSkill), 0o755); err != nil {
+		t.Fatalf("mkdir conflicting skill directory: %v", err)
+	}
+	if err := os.WriteFile(conflictingSkill, []byte("# review\n"), 0o644); err != nil {
+		t.Fatalf("write conflicting skill: %v", err)
+	}
+
+	result, err := service.Initialize(projectDir)
+	if err != nil {
+		t.Fatalf("second initialize: %v", err)
+	}
+	if containsMessage(result, "missing asset .github/skills/review/SKILL.md") {
+		t.Fatalf("existing conflicting asset must not be reported missing: %#v", result.Messages)
 	}
 }
 

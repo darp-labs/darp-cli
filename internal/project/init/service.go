@@ -84,7 +84,7 @@ func (s Service) Initialize(root string) (Result, error) {
 			return Result{}, err
 		}
 	}
-	updated, registrations, err := registerAssets(configContent, report.Found)
+	updated, registrations, err := registerAssets(configContent, report.Found, root, s.fs)
 	if err != nil {
 		return Result{}, err
 	}
@@ -388,6 +388,7 @@ type registrationStatus string
 const (
 	assetAdded             registrationStatus = "added"
 	assetAlreadyRegistered registrationStatus = "already_registered"
+	assetMissing           registrationStatus = "missing"
 )
 
 type assetRegistration struct {
@@ -405,7 +406,7 @@ type assetIdentity struct {
 // It is additive and idempotent: entries already present are reported as
 // already registered and never duplicated. It never mutates the original
 // content unless at least one new entry must be added.
-func registerAssets(content []byte, found []asset.Asset) ([]byte, []assetRegistration, error) {
+func registerAssets(content []byte, found []asset.Asset, projectRoot string, fs FileSystem) ([]byte, []assetRegistration, error) {
 	var document yaml.Node
 	if err := yaml.Unmarshal(content, &document); err != nil {
 		return nil, nil, fmt.Errorf("invalid darp.yml: %w", err)
@@ -419,6 +420,7 @@ func registerAssets(content []byte, found []asset.Asset) ([]byte, []assetRegistr
 	}
 
 	existing := make(map[assetIdentity]bool)
+	existingAssets := make([]assetIdentity, 0)
 	assetsNode := mappingValue(root, "assets")
 	if assetsNode != nil {
 		if assetsNode.Kind == yaml.ScalarNode && assetsNode.Tag == "!!null" {
@@ -435,13 +437,18 @@ func registerAssets(content []byte, found []asset.Asset) ([]byte, []assetRegistr
 			if err != nil {
 				return nil, nil, fmt.Errorf("cannot safely update darp.yml: %w", err)
 			}
+			if !existing[id] {
+				existingAssets = append(existingAssets, id)
+			}
 			existing[id] = true
 		}
 	}
 
-	registrations := make([]assetRegistration, 0, len(found))
+	registrations := make([]assetRegistration, 0, len(found)+len(existingAssets))
+	discovered := make(map[assetIdentity]bool, len(found))
 	for _, a := range found {
 		id := assetIdentity{path: a.Path, family: string(a.Family), typ: string(a.Type)}
+		discovered[id] = true
 		if existing[id] {
 			registrations = append(registrations, assetRegistration{asset: a, status: assetAlreadyRegistered})
 			continue
@@ -456,6 +463,26 @@ func registerAssets(content []byte, found []asset.Asset) ([]byte, []assetRegistr
 		assetsNode.Content = append(assetsNode.Content, newAssetNode(a))
 		existing[id] = true
 		registrations = append(registrations, assetRegistration{asset: a, status: assetAdded})
+	}
+	for _, id := range existingAssets {
+		if discovered[id] {
+			continue
+		}
+		relativePath := filepath.FromSlash(id.path)
+		if !filepath.IsLocal(relativePath) {
+			continue
+		}
+		exists, err := fs.Exists(filepath.Join(projectRoot, relativePath))
+		if err != nil {
+			return nil, nil, fmt.Errorf("check registered asset %s: %w", id.path, err)
+		}
+		if exists {
+			continue
+		}
+		registrations = append(registrations, assetRegistration{
+			asset:  asset.Asset{Path: id.path, Family: asset.Family(id.family), Type: asset.Type(id.typ)},
+			status: assetMissing,
+		})
 	}
 
 	if !hasAdded(registrations) {
@@ -537,6 +564,8 @@ func renderAssetMessages(report discovery.Report, registrations []assetRegistrat
 			messages = append(messages, fmt.Sprintf("✔ Registered asset %s (%s/%s)", a.Path, a.Family, a.Type))
 		case assetAlreadyRegistered:
 			messages = append(messages, fmt.Sprintf("• Asset already registered %s (%s/%s)", a.Path, a.Family, a.Type))
+		case assetMissing:
+			messages = append(messages, fmt.Sprintf("• Registered entry references missing asset %s (%s/%s)", a.Path, a.Family, a.Type))
 		}
 	}
 	for _, ambiguity := range report.Ambiguous {
@@ -548,7 +577,7 @@ func renderAssetMessages(report discovery.Report, registrations []assetRegistrat
 	for _, ignored := range report.Ignored {
 		messages = append(messages, fmt.Sprintf("• Ignored symlink %s", ignored.Path))
 	}
-	if report.Empty() {
+	if report.Empty() && len(registrations) == 0 {
 		messages = append(messages, "• No supported assets found")
 	}
 	return messages

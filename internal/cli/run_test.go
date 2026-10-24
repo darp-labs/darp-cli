@@ -10,6 +10,120 @@ import (
 	"github.com/darpbr/darp-cli/internal/project/doctor"
 )
 
+func TestSyncRejectsUnknownArgumentsWithoutWriting(t *testing.T) {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(old); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	}()
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"sync", "--unknown"}, &stdout, &stderr, ""); code != 1 {
+		t.Fatalf("exit code=%d", code)
+	}
+	if _, err := os.Stat("darp.yml"); !os.IsNotExist(err) {
+		t.Fatalf("unexpected manifest write: %v", err)
+	}
+}
+
+func TestRunSyncDryRunShowsPreviewWithoutBootstrapWrites(t *testing.T) {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(old); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	}()
+	if err := os.MkdirAll(filepath.Join(".agents", "skills", "custom"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	skill := "---\nname: custom\ndescription: A valid test skill for previewing sync behavior.\n---\n# Instructions\n"
+	if err := os.WriteFile(filepath.Join(".agents", "skills", "custom", "SKILL.md"), []byte(skill), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"sync", "--dry-run"}, &stdout, &stderr, ""); code != 0 {
+		t.Fatalf("exit code=%d, stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "DARP sync preview") || !strings.Contains(stdout.String(), "custom") {
+		t.Fatalf("unexpected report: %s", stdout.String())
+	}
+	if _, err := os.Stat("darp.yml"); !os.IsNotExist(err) {
+		t.Fatalf("dry run created darp.yml: %v", err)
+	}
+	if _, err := os.Stat(".darp"); !os.IsNotExist(err) {
+		t.Fatalf("dry run created .darp: %v", err)
+	}
+}
+
+func TestRunSyncReturnsSuccessForPartialDiscoveryWarnings(t *testing.T) {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(old); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	}()
+	if err := os.MkdirAll(filepath.Join(".agents", "skills", "invalid-name"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(".agents", "skills", "invalid-name", "SKILL.md"), []byte("---\nname: different\ndescription: Invalid identity.\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"sync", "--dry-run"}, &stdout, &stderr, ""); code != 0 {
+		t.Fatalf("partial discovery should succeed: code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Ignored (1)") || !strings.Contains(stdout.String(), "Warnings (1)") {
+		t.Fatalf("partial result was not reported: %s", stdout.String())
+	}
+}
+
+func TestRunSyncReturnsFailureForInvalidManifest(t *testing.T) {
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.Chdir(old); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	}()
+	if err := os.WriteFile("darp.yml", []byte("skills: [\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"sync"}, &stdout, &stderr, ""); code != 1 {
+		t.Fatalf("invalid manifest should fail: code=%d stdout=%s", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "invalid darp.yml") {
+		t.Fatalf("invalid manifest failure not reported: %s", stderr.String())
+	}
+}
+
 func TestRunInitInitializesProject(t *testing.T) {
 	projectDir := t.TempDir()
 	previousDir, err := os.Getwd()
