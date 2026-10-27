@@ -1,38 +1,38 @@
-# Contribuindo com o DARP CLI
+# Contributing to DARP CLI
 
-Obrigado por contribuir com o DARP CLI. O projeto busca tornar assets reutilizáveis de IA versionáveis, compartilháveis e instaláveis como pacotes.
+Thank you for contributing to DARP CLI. The project aims to make reusable AI assets versionable, shareable, and installable as packages.
 
-## Antes de começar
+## Before You Start
 
-Leia estes documentos antes de propor uma mudança:
+Read these documents before proposing a change:
 
 - [README](README.md)
 - [AGENTS.md](AGENTS.md)
-- [Código de Conduta](CODE_OF_CONDUCT.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 
-Especificações, planos, ADRs e contexto interno são mantidos no repositório privado `darp-cli-specs`. Para uma contribuição funcional, peça a uma pessoa mantenedora a confirmação do escopo aprovado; não inclua cópias de documentos privados neste repositório público.
+Specifications, plans, ADRs, and internal context are maintained in the private `darp-cli-specs` repository. For a functional contribution, ask a maintainer to confirm the approved scope; do not include copies of private documents in this public repository.
 
-Para uma mudança relevante, procure uma issue ou abra uma nova discussão antes de implementar. O projeto segue Specification-Driven Development; funcionalidades não devem ser implementadas sem uma especificação aprovada.
+For a significant change, look for an existing issue or open a discussion before implementing it. The project follows Specification-Driven Development; features must not be implemented without an approved specification.
 
-## Tipos de contribuição
+## Contribution Types
 
-São bem-vindas contribuições de:
+Contributions are welcome in the following areas:
 
-- código Go e correções de bugs;
-- testes automatizados;
-- documentação e exemplos;
-- skills, prompts e outros assets de IA;
-- melhorias de governança e ferramentas de desenvolvimento;
-- relatos de bugs e propostas de funcionalidades.
+- Go code and bug fixes;
+- automated tests;
+- documentation and examples;
+- skills, prompts, and other AI assets;
+- governance and development-tool improvements;
+- bug reports and feature proposals.
 
-## Configuração local
+## Local Setup
 
-Requisitos:
+Requirements:
 
 - Git;
-- Go compatível com a versão declarada em [go.mod](go.mod).
+- Go compatible with the version declared in [go.mod](go.mod).
 
-Clone o repositório e execute as validações disponíveis:
+Clone the repository and run the available checks:
 
 ```bash
 git clone https://github.com/darpbr/darp-cli.git
@@ -40,67 +40,67 @@ cd darp-cli
 make verify
 ```
 
-Comandos úteis:
+Useful commands:
 
-| Comando | Objetivo |
+| Command | Purpose |
 | --- | --- |
-| `make build` | Compila o CLI para a plataforma atual. |
-| `make test` | Executa os testes Go. |
-| `make lint` | Executa `golangci-lint` ou, como fallback, `go vet`. |
-| `make fmt` | Formata os arquivos Go. |
-| `make verify` | Executa formatação, testes e lint. |
-| `make run` | Executa o CLI localmente. |
+| `make build` | Builds the CLI for the current platform. |
+| `make test` | Runs the Go tests. |
+| `make lint` | Runs `golangci-lint` or falls back to `go vet`. |
+| `make fmt` | Formats the Go files. |
+| `make verify` | Runs formatting, tests, and lint. |
+| `make run` | Runs the CLI locally. |
 
-## Fluxo de desenvolvimento
+## Development Workflow
 
-1. Crie uma branch descritiva a partir de `main`.
-2. Para mudanças funcionais, confirme com uma pessoa mantenedora a especificação aprovada no repositório privado `darp-cli-specs`; contribuições sem acesso devem seguir um escopo público aprovado.
-3. Mantenha a alteração pequena, focada e compatível com a arquitetura existente.
-4. Adicione ou atualize testes quando o comportamento mudar.
-5. Atualize a documentação afetada.
-6. Execute `make verify` antes de abrir o pull request.
-7. Abra um pull request usando o template do repositório.
+1. Create a descriptive branch from `main`.
+2. For functional changes, confirm the approved specification in the private `darp-cli-specs` repository with a maintainer; contributors without access must follow an approved public scope.
+3. Keep the change small, focused, and compatible with the existing architecture.
+4. Add or update tests when behavior changes.
+5. Update the affected documentation. Write all public user documentation and published specifications in English.
+6. Run `make verify` before opening a pull request.
+7. Open a pull request using the repository template.
 
-O fluxo do projeto é:
+The project workflow is:
 
 `Vision → Constitution → Specification → Plan → Tasks → Implementation → Review`
 
-## Padrões de implementação
+## Implementation Standards
 
-- Prefira Go idiomático e a biblioteca padrão quando ela for suficiente.
-- Mantenha funções focadas, pacotes coesos e baixo acoplamento.
-- Preserve comportamento existente e evite dependências desnecessárias.
-- Não adicione segredos, credenciais, tokens ou dados pessoais ao repositório.
-- Não documente funcionalidades que ainda não existem.
-- Explique no pull request decisões que afetem arquitetura, compatibilidade ou segurança.
+- Prefer idiomatic Go and the standard library when sufficient.
+- Keep functions focused, packages cohesive, and coupling low.
+- Preserve existing behavior and avoid unnecessary dependencies.
+- Do not add secrets, credentials, tokens, or personal data to the repository.
+- Do not document features that do not exist yet.
+- Explain decisions affecting architecture, compatibility, or security in the pull request.
 
-## Contribuições assistidas por IA
+## AI-Assisted Contributions
 
-Ferramentas de IA podem ser usadas, mas a pessoa autora permanece responsável por todo o conteúdo enviado. Revise criticamente o resultado, confirme as fontes, execute os testes e certifique-se de compreender as alterações e seus impactos.
+AI tools may be used, but the author remains responsible for all submitted content. Critically review the output, verify sources, run tests, and make sure you understand the changes and their impact.
 
-## Issues e vulnerabilidades
+## Issues and Vulnerabilities
 
-Use issues para bugs reproduzíveis, dúvidas de projeto e propostas de melhoria. Pesquise issues existentes antes de abrir uma nova e inclua contexto, passos para reprodução e resultado esperado quando aplicável.
+Use issues for reproducible bugs, project questions, and improvement proposals. Search existing issues before opening a new one, and include context, reproduction steps, and the expected result when applicable.
 
-Não publique vulnerabilidades, credenciais ou informações sensíveis em issues ou pull requests públicos. Para uma questão de segurança ou de privacidade, contate os mantenedores pelo perfil [@darpbr](https://github.com/darpbr), solicitando um canal privado.
+Do not disclose vulnerabilities, credentials, or sensitive information in public issues or pull requests. For security or privacy concerns, contact the maintainers through the [@darpbr](https://github.com/darpbr) profile and request a private channel.
 
-## Pull requests
+## Pull Requests
 
-Pull requests devem:
+Pull requests should:
 
-- descrever o problema e a solução;
-- relacionar a issue ou especificação correspondente;
-- informar testes e comandos executados;
-- registrar riscos, limitações e possíveis breaking changes;
-- conter somente alterações relacionadas ao objetivo;
-- estar prontos para revisão ou marcados como Draft quando ainda estiverem em andamento.
+- describe the problem and the solution;
+- reference the related issue or specification;
+- report tests and commands that were run;
+- record risks, limitations, and potential breaking changes;
+- contain only changes related to the stated goal;
+- be ready for review or marked as Draft while still in progress.
 
-Os mantenedores podem solicitar ajustes de código, testes, documentação, arquitetura ou escopo. Responda aos comentários no próprio pull request para manter o histórico público e rastreável.
+Maintainers may request changes to code, tests, documentation, architecture, or scope. Reply to comments in the pull request to keep the public history traceable.
 
-## Revisão e merge
+## Review and Merge
 
-Um pull request pode ser integrado quando o escopo estiver claro, os checks aplicáveis passarem, as revisões forem tratadas e a documentação estiver alinhada. A aprovação final é responsabilidade dos mantenedores definidos em [CODEOWNERS](.github/CODEOWNERS).
+A pull request may be merged when its scope is clear, applicable checks pass, review comments are addressed, and documentation is aligned. Final approval is the responsibility of the maintainers defined in [CODEOWNERS](.github/CODEOWNERS).
 
-## Código de Conduta
+## Code of Conduct
 
-A participação no projeto está sujeita ao [Código de Conduta](CODE_OF_CONDUCT.md). Questões de comportamento devem ser tratadas de forma respeitosa e, quando necessário, reportadas em privado aos mantenedores.
+Participation in the project is subject to the [Code of Conduct](CODE_OF_CONDUCT.md). Treat conduct concerns respectfully and report them privately to the maintainers when needed.

@@ -1,83 +1,84 @@
 # Changelog
 
-Todas as mudanças relevantes do DARP CLI serão documentadas neste arquivo.
+All notable changes to DARP CLI are documented in this file.
 
-O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e
-as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
+This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Documentação
+### Documentation
 
-- Mover especificações, planos, ADRs e estratégia interna para o repositório privado; manter em `docs/` somente documentação pública aprovada.
-- Atualizar as orientações de contribuição e dos agentes para usar o fluxo privado de `darp-cli-specs`.
+- Move internal specifications, plans, ADRs, and strategy to the private repository; keep only approved public documentation in `docs/`.
+- Update contributor and agent guidance to use the private `darp-cli-specs` workflow.
+- Require English for public user documentation and published specifications.
 
-### Adicionado
+### Added
 
-- Comando `darp sync` para reconciliar explicitamente skills e assets em
-  `darp.yml`, com ownership gerenciado, relatório de itens ignorados e opção
-  `--dry-run`.
-- Skill compartilhada para criar branches e commits focados e abrir pull
-  requests via `gh`, preenchendo o template do repositório quando disponível;
-  publicada para Codex, GitHub Copilot e Claude Code.
-- Comando `darp init` para inicializar projetos DARP com os contratos, a
-  configuração base e a estrutura compartilhada de skills.
-- Comando `darp doctor` para diagnosticar projetos DARP sem alterar arquivos,
-  incluindo configuração, estrutura, workflows, skills, templates,
-  governança e compatibilidade de contratos.
-- Comandos `darp --help` e `darp --version`.
-- Fluxo de desenvolvimento orientado por especificações, com ciclo de vida,
-  governança e documentação para contribuições.
+- Add the `darp sync` command to explicitly reconcile skills and assets in
+  `darp.yml`, with managed ownership, a report of skipped items, and a
+  `--dry-run` option.
+- Add a shared skill for creating focused branches and commits and opening pull
+  requests with `gh`, filling in the repository template when available;
+  published for Codex, GitHub Copilot, and Claude Code.
+- Add the `darp init` command to initialize DARP projects with contracts, base
+  configuration, and the shared skills structure.
+- Add the `darp doctor` command to diagnose DARP projects without modifying
+  files, including configuration, structure, workflows, skills, templates,
+  governance, and contract compatibility.
+- Add the `darp --help` and `darp --version` commands.
+- Add a specification-driven development workflow, including a lifecycle,
+  governance, and contribution documentation.
 
-### Alterado
+### Changed
 
-- `darp init` restaura apenas arquivos e diretórios ausentes em projetos
-  parciais, preservando arquivos existentes e especificações do projeto.
-- `darp init` agora distribui as quatro skills de governança, os contratos
-  completos de lifecycle e quality gates, e atualiza `darp.yml` de forma
-  aditiva e segura.
-- A versão do CLI é calculada a partir do Git durante o build, incluindo
-  indicação de desenvolvimento e de worktree modificada quando aplicável.
+- `darp init` restores only missing files and directories in partial projects,
+  preserving existing files and project specifications.
+- `darp init` now distributes all four governance skills and the complete
+  lifecycle and quality gate contracts, and updates `darp.yml` additively and
+  safely.
+- The CLI version is calculated from Git during the build, including a
+  development indicator and a modified-worktree indicator when applicable.
 
-### Adicionado
+### Added
 
-- Descoberta automática de assets preexistentes durante `darp init`, com
-  registro aditivo e seguro na nova seção `assets` do `darp.yml`. A descoberta
-  é local, determinística e somente leitura, reconhece padrões das famílias
-  GitHub, Claude, Codex, Cursor e Gemini, ignora symlinks e reporta entradas
-  já registradas e caminhos ambíguos sem sobrescrever nada.
-- `darp doctor` agora valida os assets registrados (existência, caminho
-  relativo dentro do projeto, família e tipo esperados); asset ausente é
-  reportado como `WARNING` sem bloquear o projeto.
+- Automatically discover pre-existing assets during `darp init` and register
+  them additively and safely in the new `assets` section of `darp.yml`. Discovery
+  is local, deterministic, and read-only; it recognizes patterns from the
+  GitHub, Claude, Codex, Cursor, and Gemini families, ignores symlinks, and
+  reports already-registered entries and ambiguous paths without overwriting
+  anything.
+- `darp doctor` now validates registered assets (existence, relative path within
+  the project, and expected family and type); a missing asset is reported as a
+  `WARNING` and does not block the project.
 
-### Corrigido
+### Fixed
 
-- `darp sync` agora valida o frontmatter Agent Skills antes de registrar skills,
-  reporta estruturas inválidas sem remover ownership em escopos não observados,
-  serializa corretamente o manifesto simulado e rejeita entradas de skills
-  estruturalmente inválidas antes de gravar.
-- `darp init` agora ignora arquivos não suportados dentro dos diretórios
-  convencionais de assets, evitando falhas durante a descoberta.
-- A descoberta agora centraliza a classificação oficial dos assets, reporta
-  conflitos semânticos por categoria e nome normalizado e impede seu registro
-  automático.
-- `darp doctor` agora rejeita combinações incompatíveis de caminho, família e
-  tipo, além de symlinks registrados manualmente.
-- `darp init` agora valida a configuração e os assets descobertos antes de
-  criar contratos, limpa arquivos temporários quando a substituição falha e
-  desfaz alterações parciais após falhas de persistência.
-- `darp doctor` agora classifica um diretório registrado no lugar de um asset
-  como `FAIL`; somente um asset ausente continua sendo `WARNING`.
+- `darp sync` now validates Agent Skills frontmatter before registering skills,
+  reports invalid structures without removing ownership in unobserved scopes,
+  correctly serializes the simulated manifest, and rejects structurally invalid
+  skill entries before writing.
+- `darp init` now ignores unsupported files in conventional asset directories,
+  avoiding discovery failures.
+- Discovery now centralizes official asset classification, reports semantic
+  conflicts by category and normalized name, and prevents their automatic
+  registration.
+- `darp doctor` now rejects incompatible path, family, and type combinations,
+  as well as manually registered symlinks.
+- `darp init` now validates configuration and discovered assets before creating
+  contracts, cleans up temporary files when replacement fails, and rolls back
+  partial changes after persistence failures.
+- `darp doctor` now classifies a directory registered in place of an asset as
+  `FAIL`; only a missing asset remains a `WARNING`.
 
-## Como manter este arquivo
+## Maintaining This File
 
-- Registre mudanças voltadas aos usuários em `Unreleased` durante o
-  desenvolvimento.
-- Use as categorias `Adicionado`, `Alterado`, `Corrigido`, `Removido`,
-  `Segurança` e `Descontinuado` somente quando forem necessárias.
-- Ao publicar uma versão, transforme `Unreleased` em uma seção versionada com
-  a data no formato `AAAA-MM-DD` e crie uma nova seção `Unreleased` acima dela.
-- Não registre cada commit: prefira mudanças relevantes para usuários,
-  contribuidores e consumidores do CLI.
+- Record user-facing changes under `Unreleased` during development.
+- Use the `Added`, `Changed`, `Fixed`, `Removed`, `Security`, and `Deprecated`
+  categories only when needed.
+- When publishing a release, turn `Unreleased` into a versioned section dated
+  `YYYY-MM-DD` and add a new `Unreleased` section above it.
+- Do not record every commit; focus on changes relevant to users, contributors,
+  and CLI consumers.
 
 [Unreleased]: https://github.com/darpbr/darp-cli/compare/HEAD...main

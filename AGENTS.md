@@ -70,6 +70,7 @@ Use the templates in `specs/internal/darp-cli/.spec/templates/` in the private s
 - Treat `docs/` as public. Add only content approved under the publication policy in the private `darp-cli-specs` repository.
 - Do not copy internal specifications, plans, roadmaps, project context, or ADRs into this repository. For approved publications, keep this public copy canonical and ask a maintainer to update the private publication index.
 - Review examples, attachments, filenames, metadata, Git history, and possible external indexing. AI checks are assistance, not approval or proof of rights.
+- Write all public user documentation and published specifications in English. Internal documents may use another language unless they are approved for public release.
 - Never commit credentials, personal data, customer/corporate information, or other restricted content.
 
 ## Architecture Principles

@@ -1,47 +1,47 @@
-# Código de Conduta
+# Code of Conduct
 
-## Nosso compromisso
+## Our Pledge
 
-Nós, como membros, contribuidores e líderes da comunidade DARP CLI, nos comprometemos a tornar a participação uma experiência livre de assédio para todas as pessoas, independentemente de idade, tipo físico, deficiência visível ou não visível, etnia, características sexuais, identidade e expressão de gênero, experiência, educação, situação socioeconômica, nacionalidade, aparência pessoal, raça, casta, cor, religião ou orientação sexual e afetiva.
+As members, contributors, and leaders of the DARP CLI community, we pledge to make participation a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, experience, education, socioeconomic status, nationality, personal appearance, race, caste, color, religion, or sexual orientation.
 
-Nós nos comprometemos a agir e interagir de maneira que contribua para uma comunidade aberta, acolhedora, diversa, inclusiva e saudável.
+We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
 
-## Nossos padrões
+## Our Standards
 
-Exemplos de comportamentos que contribuem para um ambiente positivo:
+Examples of behavior that contributes to a positive environment include:
 
-- demonstrar empatia e gentileza;
-- respeitar opiniões, pontos de vista e experiências diferentes;
-- oferecer e receber feedback construtivo com maturidade;
-- assumir responsabilidade por erros, pedir desculpas e aprender com eles;
-- priorizar o que é melhor para a comunidade.
+- showing empathy and kindness;
+- respecting different opinions, viewpoints, and experiences;
+- giving and receiving constructive feedback gracefully;
+- accepting responsibility and apologizing to those affected by our mistakes, and learning from the experience;
+- focusing on what is best for the community.
 
-Comportamentos inaceitáveis incluem:
+Examples of unacceptable behavior include:
 
-- linguagem ou imagens sexualizadas e qualquer atenção ou avanço de natureza sexual;
-- trolling, insultos, comentários depreciativos e ataques pessoais ou políticos;
-- assédio público ou privado;
-- publicação de informações privadas de outra pessoa sem sua autorização explícita;
-- qualquer conduta que possa ser considerada inadequada em um ambiente profissional.
+- the use of sexualized language or imagery, and sexual attention or advances of any kind;
+- trolling, insulting or derogatory comments, and personal or political attacks;
+- public or private harassment;
+- publishing another person's private information without their explicit permission;
+- other conduct that could reasonably be considered inappropriate in a professional setting.
 
-## Responsabilidades de aplicação
+## Enforcement Responsibilities
 
-As pessoas responsáveis pela comunidade devem esclarecer e aplicar estes padrões e tomar medidas corretivas justas e adequadas diante de comportamentos inadequados, ameaçadores, ofensivos ou prejudiciais.
+Community leaders are responsible for clarifying and enforcing these standards and will take fair and appropriate corrective action in response to any behavior they deem inappropriate, threatening, offensive, or harmful.
 
-Elas podem remover, editar ou rejeitar comentários, commits, código, edições de wiki, issues e outras contribuições que não estejam alinhadas a este Código de Conduta, comunicando os motivos quando apropriado.
+Community leaders have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned with this Code of Conduct. They will communicate the reasons for moderation decisions when appropriate.
 
-## Escopo
+## Scope
 
-Este Código de Conduta se aplica a todos os espaços da comunidade e também quando uma pessoa estiver representando oficialmente a comunidade em espaços públicos. Isso inclui o uso de um endereço oficial, publicações em canais oficiais ou participação como representante designado em eventos online ou presenciais.
+This Code of Conduct applies in all community spaces and also applies when an individual is officially representing the community in public spaces. Examples include using an official email address, posting through an official account, or acting as an appointed representative at an online or in-person event.
 
-## Aplicação
+## Enforcement
 
-Comportamentos abusivos, assediadores ou inaceitáveis devem ser reportados de forma privada aos mantenedores pelo perfil [@darpbr](https://github.com/darpbr). Não publique detalhes sensíveis em issues ou pull requests públicos.
+Abusive, harassing, or otherwise unacceptable behavior may be reported privately to the maintainers through the [@darpbr](https://github.com/darpbr) profile. Do not post sensitive details in public issues or pull requests.
 
-Todas as denúncias serão analisadas com prontidão, imparcialidade e respeito à privacidade e à segurança de quem reportar. As pessoas responsáveis pela aplicação deste código não compartilharão a identidade de quem reportar sem consentimento, exceto quando necessário para cumprir uma obrigação legal.
+All reports will be reviewed promptly and fairly, with respect for the privacy and security of the person reporting. Community leaders responsible for enforcement will not share the identity of a reporter without their consent, except when necessary to comply with a legal obligation.
 
-As consequências podem incluir correção privada, advertência, suspensão temporária ou banimento permanente da participação, de acordo com a gravidade e o impacto do comportamento.
+Consequences may include a private correction, a warning, a temporary suspension, or a permanent ban from the community, depending on the severity and impact of the behavior.
 
-## Atribuição
+## Attribution
 
-Este Código de Conduta é adaptado do [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html), versão 2.1.
+This Code of Conduct is adapted from [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html), version 2.1.
