@@ -40,6 +40,7 @@ Always preserve architectural consistency.
 - Follow the `Documentation Publication` rules in `AGENTS.md` for documentation changes.
 - Do not copy private source specifications or planning documents into this public repository, prompts, skills, or pull requests.
 - For a public document, confirm its classification, source, rights, sanitization, review, and maintainer approval before adding it under `docs/`.
+- Write all public user documentation and published specifications in English. Internal documents may use another language unless they are approved for public release.
 - Treat AI scans as assistance only; they cannot confirm ownership or approve publication.
 
 Feature planning artifacts belong together in the private

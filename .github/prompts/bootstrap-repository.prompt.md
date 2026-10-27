@@ -41,6 +41,8 @@ If the private repository is unavailable, do not recreate or copy internal docum
 
 Before creating or changing documentation, record its classification, owner, author/source, license or attribution, and audience. Treat `docs/` as public and publish there only after the review and approval process in the private publication policy. Never add credentials or restricted material to the repository.
 
+Write all public user documentation and published specifications in English. Internal documents may use another language unless they are approved for public release.
+
 These documents have precedence over this prompt.
 
 If any contradiction exists:

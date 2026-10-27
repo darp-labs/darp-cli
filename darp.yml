@@ -10,6 +10,8 @@ skills:
   architecture: .agents/skills/architecture
   testing: .agents/skills/testing
   release: .agents/skills/release
+  create-pr: .agents/skills/create-pr
+  security-review: .agents/skills/security-review
 assets:
   - path: .github/copilot-instructions.md
     family: github
@@ -17,3 +19,20 @@ assets:
   - path: .github/prompts/bootstrap-repository.prompt.md
     family: github
     type: prompt
+darp:
+  sync:
+    managed:
+      skills:
+        architecture: .agents/skills/architecture
+        create-pr: .agents/skills/create-pr
+        documentation: .agents/skills/documentation
+        release: .agents/skills/release
+        security-review: .agents/skills/security-review
+        testing: .agents/skills/testing
+      assets:
+        - path: .github/copilot-instructions.md
+          family: github
+          type: instruction
+        - path: .github/prompts/bootstrap-repository.prompt.md
+          family: github
+          type: prompt

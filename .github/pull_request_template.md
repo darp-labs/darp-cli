@@ -1,53 +1,54 @@
 # Pull Request
 
-## Contexto
+## Context
 
-<!-- Qual problema esta alteração resolve? Inclua o contexto necessário para a revisão. -->
+<!-- What problem does this change solve? Include context needed for review. -->
 
-## Alterações
+## Changes
 
-<!-- Descreva as mudanças principais e as decisões relevantes. -->
+<!-- Describe the main changes and relevant decisions. -->
 
-## Referências
+## References
 
-- Issue relacionada: <!-- # ou "N/A" -->
-- Especificação aprovada: <!-- referência autorizada no repositório privado darp-cli-specs ou issue pública aprovada; não anexe conteúdo privado -->
+- Related issue: <!-- # or "N/A" -->
+- Approved specification: <!-- authorized reference in the private darp-cli-specs repository or an approved public issue; do not attach private content -->
 
-## Tipo de mudança
+## Change Type
 
-- [ ] Correção de bug
-- [ ] Nova funcionalidade
-- [ ] Refatoração
-- [ ] Documentação
-- [ ] Testes
-- [ ] Governança
-- [ ] Outro: <!-- descreva -->
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactoring
+- [ ] Documentation
+- [ ] Tests
+- [ ] Governance
+- [ ] Other: <!-- describe -->
 
-## Validação
+## Validation
 
-- [ ] Executei `make test`
-- [ ] Executei `make lint`
-- [ ] Executei `make verify`
-- [ ] Adicionei ou atualizei testes quando necessário
-- [ ] Atualizei a documentação afetada
-- [ ] Avaliei compatibilidade e possíveis breaking changes
-- [ ] Não incluí segredos, credenciais ou dados sensíveis
-- [ ] Para documentos novos ou alterados, informei classificação, autoria/origem, licença e público-alvo
-- [ ] Revisei exemplos, anexos, metadados, histórico e possível indexação externa
-- [ ] A revisão/aprovação de publicação foi registrada; conteúdo privado não foi copiado para este repositório
+- [ ] Ran `make test`
+- [ ] Ran `make lint`
+- [ ] Ran `make verify`
+- [ ] Added or updated tests when needed
+- [ ] Updated the affected documentation
+- [ ] Assessed compatibility and potential breaking changes
+- [ ] Did not include secrets, credentials, or sensitive data
+- [ ] For new or changed documents, recorded classification, authorship/source, license, and audience
+- [ ] Reviewed examples, attachments, metadata, history, and possible external indexing
+- [ ] Recorded publication review/approval; did not copy private content into this repository
+- [ ] Wrote public user documentation and published specifications in English
 
-## Impacto e riscos
+## Impact and Risks
 
-<!-- Informe impactos em usuários, compatibilidade, segurança, performance ou operação. -->
+<!-- Describe impacts on users, compatibility, security, performance, or operations. -->
 
-## Notas para revisão
+## Review Notes
 
-<!-- Aponte limitações, decisões ou áreas que exigem atenção especial. -->
+<!-- Note limitations, decisions, or areas that need special attention. -->
 
-## Checklist da autoria
+## Author Checklist
 
-- [ ] Li e segui o `AGENTS.md` e as regras do projeto
-- [ ] O diff está limitado ao escopo desta mudança
-- [ ] Revisei o próprio diff antes de solicitar revisão
-- [ ] Estou familiarizado com todas as alterações deste pull request
-- [ ] Este pull request está pronto para revisão ou foi aberto como Draft
+- [ ] Read and followed `AGENTS.md` and the project rules
+- [ ] Kept the diff within the scope of this change
+- [ ] Reviewed the diff before requesting review
+- [ ] Understand all changes in this pull request
+- [ ] This pull request is ready for review or marked as Draft

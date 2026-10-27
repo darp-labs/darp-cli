@@ -17,6 +17,7 @@ configuration, behavior, examples or project structure.
 - Validate internal links and documented paths.
 - Classify new or materially changed documents and record owner, source/authorship, license or attribution, and audience.
 - Treat `docs/` in the public repository as approved-publication-only; consult the private publication policy before publishing.
+- Write all public user documentation and published specifications in English. Internal documents may use another language unless they are approved for public release.
 - Review examples, attachments, metadata, history, and external indexing. Escalate uncertain rights or possible sensitive content to a maintainer.
 - Treat automated or AI scans as assistance, never as proof of rights or publication approval.
 - Remove stale commands, examples and claims.
