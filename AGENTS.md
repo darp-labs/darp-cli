@@ -47,11 +47,11 @@ Implementation order is always:
 
 Never skip steps.
 
-The detailed operational definitions are in `.darp/lifecycle.md`. The shorter workflow in `.spec/constitution.md` is not replaced; this lifecycle expands it for execution and review.
+The public runtime lifecycle is defined in `.darp/lifecycle.md`. Internal project context, constitution, specifications, plans, tasks, and ADRs are maintained in the private `darp-cli-specs` repository under `specs/internal/darp-cli/`.
 
 ## Specification Layout
 
-All feature planning artifacts must live together under `.spec/specs/`.
+Feature planning artifacts must live in the private `darp-cli-specs` repository under `specs/internal/darp-cli/.spec/specs/`.
 Create one directory per feature using the format `<number>-<short-name>`:
 
 ```text
@@ -62,8 +62,15 @@ Create one directory per feature using the format `<number>-<short-name>`:
 └── adr/                         # optional, when architecture decisions exist
 ```
 
-Use the templates in `.spec/templates/`. Do not create active specifications, plans, or tasks outside `.spec/specs/<number>-<short-name>/`.
-The `.darp/` directory is reserved for DARP runtime contracts, while `.agents/skills/` is reserved for skills discovered by coding agents.
+Use the templates in `specs/internal/darp-cli/.spec/templates/` in the private specs repository. Do not create or copy internal specifications, plans, or tasks into this public repository. Contributors without access must obtain an approved public scope from a maintainer before implementing a feature. The `.darp/` directory is reserved for public DARP runtime contracts, while `.agents/skills/` is reserved for skills distributed or discovered by coding agents.
+
+## Documentation Publication
+
+- Classify new or materially changed documents before sharing them. Record owner, author/source, license or attribution, and audience.
+- Treat `docs/` as public. Add only content approved under the publication policy in the private `darp-cli-specs` repository.
+- Do not copy internal specifications, plans, roadmaps, project context, or ADRs into this repository. For approved publications, keep this public copy canonical and ask a maintainer to update the private publication index.
+- Review examples, attachments, filenames, metadata, Git history, and possible external indexing. AI checks are assistance, not approval or proof of rights.
+- Never commit credentials, personal data, customer/corporate information, or other restricted content.
 
 ## Architecture Principles
 
@@ -142,5 +149,5 @@ When implementing:
 - `cmd/` — CLI entrypoints
 - `internal/cli/`, `internal/project/` — domain packages
 - `pkg/` — public reusable packages
-- `.spec/specs/<n>-<name>/` — active feature specs (spec.md, plan.md, tasks.md)
+- `docs/` — approved public user guides, references, and specifications
 - `.agents/skills/` — agent skills, loaded on demand

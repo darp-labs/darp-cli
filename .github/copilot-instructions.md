@@ -7,10 +7,10 @@ Before implementing code:
 - read AGENTS.md
 - read README.md
 - understand the project vision
-- verify whether an approved specification exists under `.spec/specs/`
-- read the matching `spec.md`, `plan.md`, and `tasks.md`
+- verify with a maintainer whether an approved specification exists in the private `darp-cli-specs` repository under `specs/internal/darp-cli/.spec/specs/`
+- read the matching `spec.md`, `plan.md`, and `tasks.md` only when authorized to access that repository
 
-Never implement functionality directly from a prompt if no specification exists.
+Never implement functionality directly from a prompt if no approved specification exists. Contributors without access to the private specs must ask a maintainer for an approved public scope; do not copy private documents into this repository.
 
 Prefer:
 
@@ -35,6 +35,14 @@ When generating code:
 
 Always preserve architectural consistency.
 
-Feature planning artifacts belong together in
-`.spec/specs/<number>-<short-name>/`. Do not create active specs, plans, or
-tasks in `.darp/`, `docs/plans/`, or `docs/tasks/`.
+## Documentation and Publication
+
+- Follow the `Documentation Publication` rules in `AGENTS.md` for documentation changes.
+- Do not copy private source specifications or planning documents into this public repository, prompts, skills, or pull requests.
+- For a public document, confirm its classification, source, rights, sanitization, review, and maintainer approval before adding it under `docs/`.
+- Treat AI scans as assistance only; they cannot confirm ownership or approve publication.
+
+Feature planning artifacts belong together in the private
+`darp-cli-specs/specs/internal/darp-cli/.spec/specs/<number>-<short-name>/`.
+Do not create active specs, plans, or tasks in this public repository. The
+`.darp/` directory is reserved for public runtime contracts.

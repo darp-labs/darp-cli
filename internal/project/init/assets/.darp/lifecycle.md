@@ -3,8 +3,10 @@
 ## Purpose
 
 The DARP Lifecycle defines how work is planned, designed, implemented,
-validated and released. It is the operational detail of the principles in
-`.spec/constitution.md` and is intended for humans and AI agents.
+validated and released. It is intended for humans and AI agents. Internal
+project governance and feature specifications are maintained separately in the
+private `darp-cli-specs` repository and are not required by projects that use
+this lifecycle contract.
 
 The lifecycle is provider-agnostic and independent of programming language,
 framework, repository layout and AI model.

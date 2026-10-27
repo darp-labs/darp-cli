@@ -35,8 +35,11 @@ Before making ANY change, read completely:
 
 1. README.md
 2. AGENTS.md
-3. docs/PROJECT_CONTEXT.md
-4. .spec/constitution.md
+3. Confirm access to the private `darp-cli-specs` repository and read its project context and constitution for authorized work.
+
+If the private repository is unavailable, do not recreate or copy internal documents into this public repository. Ask a maintainer for an approved public scope before proceeding.
+
+Before creating or changing documentation, record its classification, owner, author/source, license or attribution, and audience. Treat `docs/` as public and publish there only after the review and approval process in the private publication policy. Never add credentials or restricted material to the repository.
 
 These documents have precedence over this prompt.
 

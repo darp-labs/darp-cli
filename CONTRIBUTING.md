@@ -8,9 +8,9 @@ Leia estes documentos antes de propor uma mudança:
 
 - [README](README.md)
 - [AGENTS.md](AGENTS.md)
-- [Contexto do projeto](docs/PROJECT_CONTEXT.md)
-- [Constituição do DARP](.spec/constitution.md)
 - [Código de Conduta](CODE_OF_CONDUCT.md)
+
+Especificações, planos, ADRs e contexto interno são mantidos no repositório privado `darp-cli-specs`. Para uma contribuição funcional, peça a uma pessoa mantenedora a confirmação do escopo aprovado; não inclua cópias de documentos privados neste repositório público.
 
 Para uma mudança relevante, procure uma issue ou abra uma nova discussão antes de implementar. O projeto segue Specification-Driven Development; funcionalidades não devem ser implementadas sem uma especificação aprovada.
 
@@ -54,7 +54,7 @@ Comandos úteis:
 ## Fluxo de desenvolvimento
 
 1. Crie uma branch descritiva a partir de `main`.
-2. Para mudanças relevantes, confirme a especificação aprovada correspondente em `.spec/specs/`.
+2. Para mudanças funcionais, confirme com uma pessoa mantenedora a especificação aprovada no repositório privado `darp-cli-specs`; contribuições sem acesso devem seguir um escopo público aprovado.
 3. Mantenha a alteração pequena, focada e compatível com a arquitetura existente.
 4. Adicione ou atualize testes quando o comportamento mudar.
 5. Atualize a documentação afetada.
