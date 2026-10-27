@@ -24,7 +24,11 @@ focused, understandable, and ready for review.
 3. **Validate and review.** Run the relevant checks required by the repository
    and task. Review the complete diff, including untracked files, for scope,
    correctness, accidental generated files, credentials, tokens, and other
-   sensitive data. Do not claim checks passed unless they ran successfully.
+   sensitive data. For new or materially changed public documentation, verify
+   its classification, source and publication rights, sanitization, history and
+   external-index review, and recorded human maintainer approval under the
+   applicable publication policy. AI checks do not replace this approval. Do
+   not claim checks passed unless they ran successfully.
 4. **Create a focused branch.** Use a descriptive, short, lowercase
    `type/summary` name when compatible with repository conventions (for
    example, `docs/add-install-guide` or `fix/cache-expiry`). Check that it does

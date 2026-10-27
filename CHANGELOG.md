@@ -7,6 +7,11 @@ as versões seguirão [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Documentação
+
+- Mover especificações, planos, ADRs e estratégia interna para o repositório privado; manter em `docs/` somente documentação pública aprovada.
+- Atualizar as orientações de contribuição e dos agentes para usar o fluxo privado de `darp-cli-specs`.
+
 ### Adicionado
 
 - Comando `darp sync` para reconciliar explicitamente skills e assets em

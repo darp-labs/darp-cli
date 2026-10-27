@@ -11,7 +11,7 @@
 ## Referências
 
 - Issue relacionada: <!-- # ou "N/A" -->
-- Especificação aprovada: <!-- caminho em .spec/specs/ ou "N/A" -->
+- Especificação aprovada: <!-- referência autorizada no repositório privado darp-cli-specs ou issue pública aprovada; não anexe conteúdo privado -->
 
 ## Tipo de mudança
 
@@ -32,6 +32,9 @@
 - [ ] Atualizei a documentação afetada
 - [ ] Avaliei compatibilidade e possíveis breaking changes
 - [ ] Não incluí segredos, credenciais ou dados sensíveis
+- [ ] Para documentos novos ou alterados, informei classificação, autoria/origem, licença e público-alvo
+- [ ] Revisei exemplos, anexos, metadados, histórico e possível indexação externa
+- [ ] A revisão/aprovação de publicação foi registrada; conteúdo privado não foi copiado para este repositório
 
 ## Impacto e riscos
 
