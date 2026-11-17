@@ -1,0 +1,227 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Check out full Git history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          semver_regex='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          if [[ ! "$RELEASE_TAG" =~ $semver_regex ]]; then
+            echo "error: unsupported release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Read pinned Cosign version
+        id: cosign-version
+        shell: bash
+        run: |
+          version="$(< .github/release/cosign-version.txt)"
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: invalid Cosign version pin: $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install pinned Cosign
+        uses: sigstore/cosign-installer@v4.1.2
+        with:
+          cosign-release: ${{ steps.cosign-version.outputs.version }}
+
+      - name: Build release draft with GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v2.20.0
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build authenticated bootstrap helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/helpers
+          cd tools/trust-bootstrap
+          export GOTOOLCHAIN=go1.26.5
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o ../../dist/helpers/darp-trust-bootstrap_windows_amd64.exe .
+          for os in linux darwin; do
+            for arch in amd64 arm64; do
+              if [[ "$os" == "linux" || "$os" == "darwin" ]]; then
+                GOOS=$os GOARCH=$arch CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o "../../dist/helpers/darp-trust-bootstrap_${os}_${arch}" .
+              fi
+            done
+          done
+
+      - name: Upload bootstrap helper to draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" \
+            dist/helpers/darp-trust-bootstrap_* \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber
+
+      - name: Attest release artifacts
+        uses: actions/attest@v4.2.2
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+            dist/checksums.txt.sigstore.json
+            dist/helpers/darp-trust-bootstrap_windows_amd64.exe
+            dist/helpers/darp-trust-bootstrap_linux_amd64
+            dist/helpers/darp-trust-bootstrap_linux_arm64
+            dist/helpers/darp-trust-bootstrap_darwin_amd64
+            dist/helpers/darp-trust-bootstrap_darwin_arm64
+
+      - name: Verify release evidence before publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          version="${RELEASE_TAG#v}"
+          expected_archives=(
+            "dist/darp_${version}_linux_amd64.tar.gz"
+            "dist/darp_${version}_linux_arm64.tar.gz"
+            "dist/darp_${version}_darwin_amd64.tar.gz"
+            "dist/darp_${version}_darwin_arm64.tar.gz"
+            "dist/darp_${version}_windows_amd64.zip"
+          )
+          actual_archives=(dist/*.tar.gz dist/*.zip)
+          if (( ${#actual_archives[@]} != 5 )); then
+            echo "error: expected five release archives, found ${#actual_archives[@]}" >&2
+            exit 1
+          fi
+
+          artifacts=(
+            "${expected_archives[@]}"
+            dist/checksums.txt
+            dist/checksums.txt.sigstore.json
+            dist/helpers/darp-trust-bootstrap_windows_amd64.exe
+            dist/helpers/darp-trust-bootstrap_linux_amd64
+            dist/helpers/darp-trust-bootstrap_linux_arm64
+            dist/helpers/darp-trust-bootstrap_darwin_amd64
+            dist/helpers/darp-trust-bootstrap_darwin_arm64
+          )
+          for artifact in "${artifacts[@]}"; do
+            if [[ ! -s "$artifact" ]]; then
+              echo "error: required release evidence is missing or empty: $artifact" >&2
+              exit 1
+            fi
+          done
+
+          if [[ "$(wc -l < dist/checksums.txt)" -ne 5 ]]; then
+            echo "error: checksum manifest does not contain exactly five entries" >&2
+            exit 1
+          fi
+          for archive in "${expected_archives[@]}"; do
+            if ! grep -Fq -- "${archive##*/}" dist/checksums.txt; then
+              echo "error: checksum manifest is missing $archive" >&2
+              exit 1
+            fi
+          done
+          (cd dist && sha256sum --check --strict checksums.txt)
+
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@${GITHUB_REF}"
+          cosign verify-blob \
+            --bundle dist/checksums.txt.sigstore.json \
+            --certificate-identity "$identity" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-github-workflow-repository "$GITHUB_REPOSITORY" \
+            --certificate-github-workflow-ref "$GITHUB_REF" \
+            --certificate-github-workflow-sha "$GITHUB_SHA" \
+            dist/checksums.txt
+
+          for artifact in "${artifacts[@]}"; do
+            gh attestation verify "$artifact" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+              --source-ref "$GITHUB_REF" \
+              --source-digest "$GITHUB_SHA" \
+              --predicate-type https://slsa.dev/provenance/v1
+          done
+
+          expected_assets="$(printf '%s\n' "${artifacts[@]##*/}" | sort)"
+          release_assets="$(gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json assets \
+            --jq '.assets[].name' | sort)"
+          if [[ "$release_assets" != "$expected_assets" ]]; then
+            echo "error: draft release assets do not match the verified artifacts" >&2
+            diff -u <(printf '%s\n' "$expected_assets") <(printf '%s\n' "$release_assets") || true
+            exit 1
+          fi
+
+          if [[ "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')" != true ]]; then
+            echo "error: expected the release to remain a draft until evidence verification succeeds" >&2
+            exit 1
+          fi
+
+          version_without_build="${RELEASE_TAG%%+*}"
+          expected_prerelease=false
+          if [[ "$version_without_build" == *-* ]]; then
+            expected_prerelease=true
+          fi
+          actual_prerelease="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isPrerelease --jq '.isPrerelease')"
+          if [[ "$actual_prerelease" != "$expected_prerelease" ]]; then
+            echo "error: release prerelease status does not match its semantic version" >&2
+            exit 1
+          fi
+
+      - name: Publish verified release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          version_without_build="${RELEASE_TAG%%+*}"
+          if [[ "$version_without_build" == *-* ]]; then
+            gh release edit "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft=false \
+              --prerelease
+          else
+            gh release edit "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft=false \
+              --latest
+          fi
+
+          if [[ "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')" != false ]]; then
+            echo "error: GitHub did not publish the verified release" >&2
+            exit 1
+          fi

@@ -5,4 +5,6 @@
 **Source:** Created for the DARP CLI project; confirm rights for any third-party material.
 **Audience:** DARP CLI users
 
-Public usage guides belong here. No separate guides have been approved for publication yet; the root [README](../../README.md) remains the current product overview.
+Public usage guides belong here. The [installation guide](installation.md) covers
+supported Windows, Linux, and macOS targets; the root [README](../../README.md)
+remains the current product overview.
