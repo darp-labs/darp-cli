@@ -15,6 +15,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Add signed, fail-closed PowerShell and POSIX installers for supported DARP
+  release targets.
 - Add the `darp sync` command to explicitly reconcile skills and assets in
   `darp.yml`, with managed ownership, a report of skipped items, and a
   `--dry-run` option.
