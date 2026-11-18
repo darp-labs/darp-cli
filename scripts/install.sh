@@ -115,10 +115,10 @@ fi
 if [ -z "$COSIGN" ]; then
     HELPER=darp-trust-bootstrap_${OS}_${ARCH}
     case "$OS/$ARCH" in
-        linux/amd64) HELPER_HASH=312a7229aec3a6df20a1a4064866cd69e04766c6e9ee0e31e403e12b8a3b7c1b ;;
-        linux/arm64) HELPER_HASH=d5fabd338b8559c0594aeda60d3768226b0ab7acba6ef5dcab56b65fdf7ed47b ;;
-        darwin/amd64) HELPER_HASH=13dc37a7f118910935a0916878b2d183d3837beaaa5ff4e71b12db4bc8fb2e48 ;;
-        darwin/arm64) HELPER_HASH=b6e82ad4740938f508af3a177e022f110a00ed987f623c87e55892943502776a ;;
+        linux/amd64) HELPER_HASH=ca16fc2e9c49a036910bbad5fb72932c18092ba3e7af6f95553dc47806459348 ;;
+        linux/arm64) HELPER_HASH=01da55925a3626e4c510496e292483e10a2b913ba1747f7a55ae558a01026211 ;;
+        darwin/amd64) HELPER_HASH=fd58a03708004c6e62266254386fbb186e14c8f15fb1e7a2c60cc680b6c8085a ;;
+        darwin/arm64) HELPER_HASH=ba5077a8f014e3d4a705d4c8beb330c5d96854a5eb269bbafb213e435d1943f2 ;;
         *) fail "unsupported bootstrap platform: $OS/$ARCH" ;;
     esac
     download "$DOWNLOAD_BASE/$HELPER" "$TEMP_DIR/$HELPER"
