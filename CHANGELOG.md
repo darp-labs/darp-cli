@@ -7,6 +7,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-18
+
 ### Documentation
 
 - Move internal specifications, plans, ADRs, and strategy to the private repository; keep only approved public documentation in `docs/`.
@@ -83,4 +85,5 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - Do not record every commit; focus on changes relevant to users, contributors,
   and CLI consumers.
 
-[Unreleased]: https://github.com/darpbr/darp-cli/compare/HEAD...main
+[Unreleased]: https://github.com/darp-labs/darp-cli/compare/v0.1.0...main
+[0.1.0]: https://github.com/darp-labs/darp-cli/releases/tag/v0.1.0
