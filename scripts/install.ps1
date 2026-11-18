@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 $MinimumCosignVersion = [System.Management.Automation.SemanticVersion]"3.1.4"
 $HelperName = "darp-trust-bootstrap_windows_amd64.exe"
-$HelperSha256 = "7e3100cecfe948f3e902101a6abd2c40e766db7d6ed2af0aa617441ff2c48702"
+$HelperSha256 = "fade33f32b8c03a8bdaa48bd601099f81fea7392dbe8adf98b4e352b93ec2ed7"
 
 function Fail([string]$Message) {
     throw "darp installer: $Message"
